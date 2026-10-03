@@ -11,14 +11,14 @@
 
 .filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
 .filtros button {
-  border: 1px solid #6c63ff;
+  border: 1px solid #ff7a45;
   background: #fff;
-  color: #6c63ff;
+  color: #ff7a45;
   padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
 }
-.filtros button.activo { background: #6c63ff; color: #fff; }
+.filtros button.activo { background: #ff9f43; color: #fff; }
 
 .grilla {
   display: grid;
