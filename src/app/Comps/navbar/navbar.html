@@ -1,1 +1,25 @@
-<p>navbar works!</p>
+<header class="navbar">
+  <a routerLink="/" class="logo" (click)="cerrarMenu()">🐾 Patitas</a>
+
+  <button class="hamburguesa" (click)="toggleMenu()" aria-label="Abrir menú">☰</button>
+
+  <nav class="menu" [class.abierto]="menuAbierto">
+    <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }" (click)="cerrarMenu()">Inicio</a>
+
+    <a routerLink="/cart" routerLinkActive="activo" class="carrito" (click)="cerrarMenu()">
+      🛒 Carrito
+      @if (cantidadCarrito > 0) {
+        <span class="contador">{{ cantidadCarrito }}</span>
+      }
+    </a>
+
+    @if (usuarioLogueado) {
+      <a routerLink="/order" routerLinkActive="activo" (click)="cerrarMenu()">Mi pedido</a>
+      <span class="saludo">Hola, {{ nombreUsuario }}</span>
+      <button class="btn-salir" (click)="cerrarSesion()">Cerrar sesión</button>
+    } @else {
+      <a routerLink="/signin" routerLinkActive="activo" (click)="cerrarMenu()">Ingresar</a>
+      <a routerLink="/signup" class="btn-registro" (click)="cerrarMenu()">Registrarse</a>
+    }
+  </nav>
+</header>

@@ -1,0 +1,88 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff7a45;
+  text-decoration: none;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.menu a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 4px;
+  border-bottom: 2px solid transparent;
+}
+.menu a:hover { color: #ff7a45; }
+.menu a.activo { color: #ff7a45; border-bottom-color: #ff7a45; }
+
+.carrito { position: relative; }
+.contador {
+  background: #ff7a45;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 50%;
+  padding: 2px 7px;
+  margin-left: 4px;
+}
+
+.saludo { color: #666; font-size: 14px; }
+
+.btn-registro {
+  background: #ff7a45;
+  color: #fff !important;
+  padding: 8px 16px !important;
+  border-radius: 8px;
+  border-bottom: none !important;
+}
+.btn-registro:hover { background: #e8642f; }
+
+.btn-salir {
+  background: transparent;
+  border: 1px solid #ff7a45;
+  color: #ff7a45;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn-salir:hover { background: #ff7a45; color: #fff; }
+
+.hamburguesa {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+/* Celular */
+@media (max-width: 700px) {
+  .hamburguesa { display: block; }
+  .menu {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding-top: 12px;
+  }
+  .menu.abierto { display: flex; }
+}

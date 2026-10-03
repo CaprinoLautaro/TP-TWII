@@ -1,0 +1,28 @@
+.hero {
+  background: linear-gradient(135deg, #ff9f43, #ff7a45);
+  color: #fff;
+  text-align: center;
+  padding: 60px 20px;
+}
+.hero h1 { margin: 0 0 8px; font-size: 36px; }
+.hero p { margin: 0; font-size: 18px; opacity: 0.9; }
+
+.catalogo { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
+
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+.filtros button {
+  border: 1px solid #6c63ff;
+  background: #fff;
+  color: #6c63ff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.filtros button.activo { background: #6c63ff; color: #fff; }
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+}
+.vacio { text-align: center; color: #888; }

@@ -1,1 +1,29 @@
-<p>home works!</p>
+<section class="hero">
+  <h1>🐾 Todo para tu mascota</h1>
+  <p>Alimento, juguetes y accesorios para perros, gatos y más</p>
+</section>
+
+<section class="catalogo">
+  <div class="filtros">
+    @for (cat of categorias; track cat) {
+      <button
+        [class.activo]="cat === categoriaSeleccionada"
+        (click)="seleccionarCategoria(cat)">
+        {{ cat }}
+      </button>
+    }
+  </div>
+
+  @if (productosFiltrados.length === 0) {
+    <p class="vacio">No hay productos en esta categoría.</p>
+  }
+
+  <div class="grilla">
+    @for (producto of productosFiltrados; track producto.id) {
+      <app-product-card-component
+        [product]="producto"
+        (agregar)="agregarAlCarrito($event)">
+      </app-product-card-component>
+    }
+  </div>
+</section>
