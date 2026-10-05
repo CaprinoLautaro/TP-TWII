@@ -1,1 +1,105 @@
-<p>signup works!</p>
+<div class="signup-wrapper">
+  <div class="signup-card">
+    <div class="signup-header">
+      <div class="signup-logo">
+        🐾 Patitas
+      </div>
+      <h2 class="signup-title">Creá tu cuenta</h2>
+    </div>
+
+    <div *ngIf="mensajeError" class="alert-danger">
+      {{ mensajeError }}
+    </div>
+
+    <form [formGroup]="registroForm" (ngSubmit)="onSubmit()">
+      <!-- Nombre -->
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input 
+          id="nombre"
+          type="text" 
+          class="form-control" 
+          [class.invalid]="registroForm.get('nombre')?.touched && registroForm.get('nombre')?.invalid"
+          formControlName="nombre" 
+          placeholder="Ej. Juana">
+        <small class="error-text" *ngIf="registroForm.get('nombre')?.touched && registroForm.get('nombre')?.invalid">
+          El nombre es obligatorio.
+        </small>
+      </div>
+
+      <!-- Apellido -->
+      <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input 
+          id="apellido"
+          type="text" 
+          class="form-control" 
+          [class.invalid]="registroForm.get('apellido')?.touched && registroForm.get('apellido')?.invalid"
+          formControlName="apellido" 
+          placeholder="Ej. Pérez">
+        <small class="error-text" *ngIf="registroForm.get('apellido')?.touched && registroForm.get('apellido')?.invalid">
+          El apellido es obligatorio.
+        </small>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          id="email"
+          type="email" 
+          class="form-control" 
+          [class.invalid]="registroForm.get('email')?.touched && registroForm.get('email')?.invalid"
+          formControlName="email" 
+          placeholder="nombre@ejemplo.com">
+        <small class="error-text" *ngIf="registroForm.get('email')?.touched && registroForm.get('email')?.invalid">
+          Ingrese un email válido.
+        </small>
+      </div>
+
+      <!-- Dirección -->
+      <div class="form-group">
+        <label for="direccion">Dirección</label>
+        <input 
+          id="direccion"
+          type="text" 
+          class="form-control" 
+          [class.invalid]="registroForm.get('direccion')?.touched && registroForm.get('direccion')?.invalid"
+          formControlName="direccion" 
+          placeholder="Ej. Av. Rivadavia 742">
+        <small class="error-text" *ngIf="registroForm.get('direccion')?.touched && registroForm.get('direccion')?.invalid">
+          La dirección es obligatoria.
+        </small>
+      </div>
+
+      <!-- Contraseña -->
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input 
+          id="password"
+          type="password" 
+          class="form-control" 
+          [class.invalid]="registroForm.get('password')?.touched && registroForm.get('password')?.invalid"
+          formControlName="password" 
+          placeholder="••••••••">
+        <small class="error-text" *ngIf="registroForm.get('password')?.touched && registroForm.get('password')?.hasError('required')">
+          La contraseña es obligatoria.
+        </small>
+        <small class="error-text" *ngIf="registroForm.get('password')?.touched && registroForm.get('password')?.hasError('minlength')">
+          Debe tener al menos 8 caracteres.
+        </small>
+        <small class="error-text" *ngIf="registroForm.get('password')?.touched && registroForm.get('password')?.hasError('passwordDebil')">
+          Debe incluir al menos una mayúscula, una minúscula y un número.
+        </small>
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="registroForm.invalid">
+        Registrarse
+      </button>
+    </form>
+
+    <div class="signup-footer">
+      ¿Ya tenés una cuenta? <a routerLink="/signin">Iniciá sesión</a>
+    </div>
+  </div>
+</div>
