@@ -26,3 +26,31 @@
   gap: 24px;
 }
 .vacio { text-align: center; color: #888; }
+
+.aviso {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  left: 20px;
+  max-width: 420px;
+  margin-left: auto;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #e6f6ec;
+  color: #1f6f3d;
+  border: 1px solid #b7e4c7;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+}
+.aviso.error { background: #fdecec; color: #b42318; border-color: #f5c2c0; }
+
+.btn-nuevo {
+  margin-left: auto;
+  background: #ff9f43;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+}
+.btn-nuevo:hover { background: #ff7a45; }

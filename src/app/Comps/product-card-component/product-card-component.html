@@ -1,12 +1,29 @@
-<article class="card">
+<article class="card" [class.agotado]="agotado">
   <img [src]="product.imagen" [alt]="product.nombre" />
   <div class="card-body">
     <span class="categoria">{{ product.clasificacion }}</span>
     <h3>{{ product.nombre }}</h3>
     <p class="descripcion">{{ product.descripcion }}</p>
+
+    @if (agotado) {
+      <span class="stock sin-stock">Agotado</span>
+    } @else if (pocasUnidades) {
+      <span class="stock pocas">¡Últimas {{ product.stock }} unidades!</span>
+    } @else {
+      <span class="stock">Stock: {{ product.stock }}</span>
+    }
+
     <div class="card-footer">
       <span class="precio">{{ product.precio | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
-      <button (click)="onAgregar()">Agregar al carrito</button>
+      <button (click)="onAgregar()" [disabled]="disponible === 0">
+        @if (agotado) {
+          Sin stock
+        } @else if (disponible === 0) {
+          Máximo en carrito
+        } @else {
+          Agregar al carrito
+        }
+      </button>
     </div>
   </div>
 </article>

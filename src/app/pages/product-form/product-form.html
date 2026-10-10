@@ -1,0 +1,75 @@
+<div class="form-wrapper">
+  <div class="form-card">
+    <h2>Cargar nuevo producto</h2>
+
+    @if (mensajeError()) {
+    <div class="alert error" role="alert">{{ mensajeError() }}</div>
+    }
+    @if (creado()) {
+    <div class="alert ok" role="status">Producto creado. Volviendo al catálogo…</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" type="text" formControlName="nombre" [class.invalid]="invalido('nombre')"
+          placeholder="Ej. Comedero antivoracidad" />
+        @if (invalido('nombre')) { <small class="error-text">El nombre es obligatorio (mínimo 3 caracteres).</small> }
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" rows="3" formControlName="descripcion" [class.invalid]="invalido('descripcion')"
+          placeholder="Contá de qué se trata el producto"></textarea>
+        @if (invalido('descripcion')) { <small class="error-text">La descripción es obligatoria (mínimo 10
+          caracteres).</small> }
+      </div>
+
+      <div class="form-group">
+        <label for="clasificacion">Clasificación</label>
+        <select id="clasificacion" formControlName="clasificacion" [class.invalid]="invalido('clasificacion')">
+          <option value="" disabled>Elegí una opción</option>
+          @for (cat of categorias; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+        @if (invalido('clasificacion')) { <small class="error-text">Elegí una clasificación.</small> }
+      </div>
+
+      <div class="fila">
+        <div class="form-group">
+          <label for="precio">Precio (ARS)</label>
+          <input id="precio" type="number" min="1" formControlName="precio" [class.invalid]="invalido('precio')" />
+          @if (invalido('precio')) { <small class="error-text">El precio debe ser mayor a 0.</small> }
+        </div>
+
+        <div class="form-group">
+          <label for="stock">Stock</label>
+          <input id="stock" type="number" min="0" step="1" formControlName="stock"
+            [class.invalid]="invalido('stock')" />
+          @if (invalido('stock')) { <small class="error-text">Ingresá un entero igual o mayor a 0.</small> }
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="imagen">Imagen del producto (opcional)</label>
+        <input #archivo id="imagen" type="file" accept="image/png,image/jpeg,image/webp"
+          (change)="onArchivoSeleccionado($event)" />
+        @if (errorImagen()) {
+        <small class="error-text">{{ errorImagen() }}</small>
+        }
+        @if (imagenPreview()) {
+        <div class="preview">
+          <img [src]="imagenPreview()" alt="Vista previa del producto" />
+          <button type="button" (click)="quitarImagen(archivo)">Quitar imagen</button>
+        </div>
+        }
+      </div>
+
+      <div class="acciones">
+        <a routerLink="/" class="btn-volver">Volver</a>
+        <button type="submit" class="btn-submit" [disabled]="creado()">Guardar producto</button>
+      </div>
+    </form>
+  </div>
+</div>

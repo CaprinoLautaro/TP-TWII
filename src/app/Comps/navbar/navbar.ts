@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CartService } from '../../services/cartService/cart-service';
 
 @Component({
   imports: [RouterLink, RouterLinkActive],
@@ -10,7 +12,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 export class Navbar {
   usuarioLogueado = false;
   nombreUsuario = 'Usuario';
-  cantidadCarrito = 0;
+  private readonly cartService = inject(CartService);
+  readonly cantidadCarrito = toSignal(this.cartService.cantidadTotal(), { initialValue: 0 });
 
   menuAbierto = false;
 

@@ -8,8 +8,8 @@
 
     <a routerLink="/cart" routerLinkActive="activo" class="carrito" (click)="cerrarMenu()">
       🛒 Carrito
-      @if (cantidadCarrito > 0) {
-        <span class="contador">{{ cantidadCarrito }}</span>
+      @if (cantidadCarrito() > 0) {
+        <span class="contador">{{ cantidadCarrito() }}</span>
       }
     </a>
 
