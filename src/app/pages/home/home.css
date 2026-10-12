@@ -54,3 +54,11 @@
   font-size: 14px;
 }
 .btn-nuevo:hover { background: #ff7a45; }
+
+.bonotes{
+  margin-left: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+}

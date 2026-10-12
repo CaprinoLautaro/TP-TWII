@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { IMAGEN_POR_DEFECTO, NuevoProducto, Product } from '../../models/product/product';
-import { validarProducto } from '../../models/product/product-rules';
+import { validarProducto, validarStock  } from '../../models/product/product-rules';
 
 const STORAGE_KEY = 'patitas_productos';
 
@@ -115,4 +115,21 @@ export class ProductService {
     }
     return PRODUCTOS_INICIALES;
   }
+
+    actualizarStock(id: number, stock: number): Observable<Product> {
+    const error = validarStock(stock);
+    if (error) {
+      return throwError(() => new Error(error));
+    }
+    const lista = this.productos$.value;
+    const producto = lista.find((p) => p.id === id);
+    if (!producto) {
+      return throwError(() => new Error('El producto no existe.'));
+    }
+    const actualizado: Product = { ...producto, stock };
+    this.guardar(lista.map((p) => (p.id === id ? actualizado : p)));
+    return of(actualizado);
+  }
+
+
 }

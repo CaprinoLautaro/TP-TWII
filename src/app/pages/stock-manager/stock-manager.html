@@ -1,0 +1,46 @@
+<section class="stock-page">
+  <header class="encabezado">
+    <h2>Gestionar stock</h2>
+    <a routerLink="/" class="volver">← Volver al catálogo</a>
+  </header>
+
+  @if (mensaje(); as msg) {
+    <div class="alert" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
+      {{ msg.texto }}
+    </div>
+  }
+
+  @if (productos().length === 0) {
+    <p class="vacio">Todavía no hay productos cargados.</p>
+  }
+
+  <ul class="lista">
+    @for (p of productos(); track p.id) {
+      <li class="fila">
+        <img [src]="p.imagen" [alt]="p.nombre" />
+
+        <div class="info">
+          <strong>{{ p.nombre }}</strong>
+          <span class="categoria">{{ p.clasificacion }}</span>
+        </div>
+
+        <span class="estado" [class.agotado]="p.stock === 0" [class.pocas]="p.stock > 0 && p.stock <= 3">
+          @if (p.stock === 0) { Agotado } @else { Stock: {{ p.stock }} }
+        </span>
+
+        <div class="editar">
+          <label [for]="'stock-' + p.id" class="solo-lectores">Nuevo stock de {{ p.nombre }}</label>
+          <input
+            #stockInput
+            [id]="'stock-' + p.id"
+            type="number"
+            min="0"
+            step="1"
+            [value]="p.stock"
+            (keydown.enter)="guardar(p, stockInput.value)" />
+          <button type="button" (click)="guardar(p, stockInput.value)">Guardar</button>
+        </div>
+      </li>
+    }
+  </ul>
+</section>

@@ -1,0 +1,63 @@
+.stock-page { max-width: 900px; margin: 0 auto; padding: 28px 16px; }
+
+.encabezado { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.encabezado h2 { margin: 0; color: #333; }
+.volver { color: #ff7a45; text-decoration: none; font-size: 14px; }
+
+.alert { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; background: #e6f6ec; color: #1f6f3d; border: 1px solid #b7e4c7; }
+.alert.error { background: #fdecec; color: #b42318; border-color: #f5c2c0; }
+
+.vacio { text-align: center; color: #888; }
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.fila img { width: 64px; height: 64px; object-fit: contain; border-radius: 8px; background: #fff; flex-shrink: 0; }
+
+.info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.info strong { color: #333; }
+.categoria { font-size: 12px; text-transform: uppercase; color: #ff9f43; font-weight: 600; }
+
+.estado { font-size: 13px; color: #666; min-width: 90px; text-align: center; }
+.estado.pocas { color: #d97706; font-weight: 600; }
+.estado.agotado { color: #e53e3e; font-weight: 700; }
+
+.editar { display: flex; gap: 8px; align-items: center; }
+.editar input {
+  width: 90px;
+  padding: 8px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+}
+.editar input:focus { border-color: #ff7a3d; box-shadow: 0 0 0 3px rgba(255, 122, 61, 0.15); }
+.editar button { background: #ff9f43; color: #fff; border: none; padding: 8px 14px; border-radius: 10px; cursor: pointer; }
+.editar button:hover { background: #ff7a45; }
+
+/* Etiqueta accesible pero no visible */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .fila { flex-wrap: wrap; }
+  .info { flex-basis: calc(100% - 90px); }
+  .estado { text-align: left; }
+  .editar { width: 100%; }
+  .editar input { flex: 1; }
+}

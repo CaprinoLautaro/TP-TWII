@@ -49,3 +49,10 @@ export function validarCantidad(stock: number, enCarrito: number, cantidad: numb
   }
   return null;
 }
+
+export function validarStock(stock: number): string | null {
+  if (!Number.isInteger(stock) || stock < 0) {
+    return 'El stock debe ser un número entero igual o mayor a 0.';
+  }
+  return null;
+}

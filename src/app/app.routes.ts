@@ -5,6 +5,7 @@ import { Signup } from './pages/signup/signup';
 import { Cart } from './pages/cart/cart';
 import { Order } from './pages/order/order';
 import { ProductForm } from './pages/product-form/product-form';
+import { StockManager } from './pages/stock-manager/stock-manager';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -14,5 +15,6 @@ export const routes: Routes = [
   { path: 'order', component: Order },
   // TODO: restringir a rol admin cuando exista el rol simulado
   { path: 'productos/nuevo', component: ProductForm },
+  { path: 'productos/stock', component: StockManager },
   // acá van signup, signin, cart, etc.
 ];

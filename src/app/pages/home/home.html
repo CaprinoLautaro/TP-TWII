@@ -18,7 +18,10 @@
         {{ cat }}
       </button>
     }
+    <div class="bonotes">
     <a routerLink="/productos/nuevo" class="btn-nuevo">+ Cargar producto</a>
+    <a routerLink="/productos/stock" class="btn-nuevo">Gestionar stock</a>
+    </div>
   </div>
 
   @if (productosFiltrados().length === 0) {
