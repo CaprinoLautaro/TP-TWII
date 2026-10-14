@@ -1,1 +1,113 @@
-<p>order works!</p>
+<div class="order-page">
+  <!-- Si todavia no se confirmo el pedido -->
+  @if (!pedidoConfirmado) {
+    <div class="order-box">
+      <div class="order-header">
+        <h2>Resumen y Detalle del Pedido</h2>
+        <span class="fecha-badge">
+          Fecha: {{ fechaActual | date: 'dd/MM/yyyy HH:mm' }}
+        </span>
+      </div>
+
+      <!-- Si esta vacio -->
+      @if (itemsDetalle.length === 0) {
+        <div class="empty-cart-msg">
+          <p>No tenes productos seleccionados para generar un pedido.</p>
+          <button class="btn-primary" (click)="volverAlCatalogo()">Ir a la Tienda de Mascotas</button>
+        </div>
+      } @else {
+        <!-- Contenido con productos -->
+        <div class="order-grid">
+          <!-- Listado de Productos -->
+          <div class="order-items-col">
+            <h3>Articulos del Pedido ({{ totalUnidades }})</h3>
+
+            @for (item of itemsDetalle; track item.producto.id) {
+              <div class="item-card">
+                <img 
+                  [src]="item.producto?.imagen || 'https://placehold.co/80x80?text=Mascota'" 
+                  [alt]="item.producto?.nombre" 
+                  class="item-thumb" 
+                />
+                <div class="item-details">
+                  <span class="categoria-tag">{{ item.producto?.clasificacion || 'Mascotas' }}</span>
+                  <h4>{{ item.producto?.nombre }}</h4>
+                  <p class="item-desc">{{ item.producto?.descripcion }}</p>
+                  <p class="unit-price">
+                    Precio unitario: {{ item.producto?.precio | currency: 'ARS':'symbol':'1.2-2' }}
+                  </p>
+                </div>
+                <div class="item-calc">
+                  <p class="qty">Cantidad: <strong>x{{ item.cantidad }}</strong></p>
+                  <p class="subtotal">
+                    Subtotal: <strong>{{ item.subtotal | currency: 'ARS':'symbol':'1.2-2' }}</strong>
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Datos de Entrega y Total -->
+          <div class="order-summary-col">
+            <div class="card-summary">
+              <h3>📦 Datos de Envio</h3>
+              <p><strong>Destinatario:</strong> {{ usuarioActual.nombre }} {{ usuarioActual.apellido }}</p>
+              <p><strong>Email:</strong> {{ usuarioActual.email }}</p>
+              <p><strong>Dirección:</strong> {{ usuarioActual.direccion }}</p>
+
+              <hr class="divider" />
+
+              <h3>Detalle de Cobro</h3>
+              <div class="summary-line">
+                <span>Subtotal productos:</span>
+                <span>{{ total | currency: 'ARS':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="summary-line">
+                <span>Costo de envio:</span>
+                <span class="envio-gratis">Gratis 🐾</span>
+              </div>
+              <div class="summary-line total-line">
+                <span>Total a Pagar:</span>
+                <span>{{ total | currency: 'ARS':'symbol':'1.2-2' }}</span>
+              </div>
+
+              <button class="btn-confirm" (click)="confirmarPedido()">
+                Confirmar Pedido
+              </button>
+              <button class="btn-secondary" (click)="volverAlCatalogo()">
+                Seguir Comprando
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Comprobante Final  -->
+    <div class="confirmed-card">
+      <div class="success-badge">🐶 ¡Pedido Realizado con Exito!</div>
+      <h2>Muchas gracias por tu compra</h2>
+      <p class="order-number">Código de Pedido: <strong>{{ pedidoConfirmado.orderId }}</strong></p>
+      <p class="order-date">Fecha: {{ pedidoConfirmado.fecha | date: 'dd/MM/yyyy HH:mm' }}</p>
+
+      <div class="confirmation-info">
+        <p>Se enviara el comprobante a <strong>{{ pedidoConfirmado.usuario.email }}</strong>.</p>
+        <p>Dirección de destino: <strong>{{ pedidoConfirmado.usuario.direccion }}</strong></p>
+      </div>
+
+      <div class="confirmed-items">
+        <h4>Detalle de articulos:</h4>
+        <ul>
+          @for (it of pedidoConfirmado.items; track it.producto.id) {
+            <li>
+              {{ it.cantidad }}x {{ it.producto?.nombre }} — {{ it.subtotal | currency: 'ARS':'symbol':'1.2-2' }}
+            </li>
+          }
+        </ul>
+        <h3 class="final-total">Total abonado: {{ pedidoConfirmado.total | currency: 'ARS':'symbol':'1.2-2' }}</h3>
+      </div>
+
+      <button class="btn-primary" (click)="volverAlCatalogo()">Volver al Inicio</button>
+    </div>
+  }
+</div>

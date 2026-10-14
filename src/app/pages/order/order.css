@@ -1,0 +1,242 @@
+.order-page {
+  max-width: 1050px;
+  margin: 30px auto;
+  padding: 0 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #2c3e50;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #edf2f7;
+  padding-bottom: 12px;
+  margin-bottom: 25px;
+}
+
+.order-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.fecha-badge {
+  background: #edf2f7;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.order-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+}
+
+@media (max-width: 768px) {
+  .order-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-summary {
+    margin-top: 0;
+  }
+}
+
+.order-items-col h3, .order-summary-col h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.15rem;
+  color: #34495e;
+}
+
+.item-card {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  gap: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.item-thumb {
+  width: 75px;
+  height: 75px;
+  object-fit: cover;
+  border-radius: 6px;
+  background-color: #f7fafc;
+}
+
+.item-details {
+  flex: 1;
+}
+
+.categoria-tag {
+  display: inline-block;
+  background-color: #feebc8;
+  color: #c05621;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 5px;
+}
+
+.item-details h4 {
+  margin: 3px 0;
+  font-size: 1rem;
+}
+
+.item-desc {
+  font-size: 0.85rem;
+  color: #718096;
+  margin: 3px 0;
+}
+
+.unit-price {
+  font-size: 0.85rem;
+  color: #4a5568;
+  margin: 3px 0;
+}
+
+.item-calc {
+  text-align: right;
+  min-width: 120px;
+}
+
+.item-calc .qty {
+  font-size: 0.9rem;
+  margin: 0 0 5px 0;
+}
+
+.item-calc .subtotal {
+  font-size: 1rem;
+  margin: 0;
+  color: #2b6cb0;
+}
+
+.card-summary {
+   margin-top: 42px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.card-summary p {
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
+
+.divider {
+  border: 0;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 15px 0;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  font-size: 0.95rem;
+}
+
+.envio-gratis {
+  color: #38a169;
+  font-weight: bold;
+}
+
+.total-line {
+  border-top: 1px dashed #cbd5e0;
+  padding-top: 12px;
+  margin-top: 12px;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1a202c;
+}
+
+.btn-confirm {
+  width: 100%;
+  padding: 12px;
+  margin-top: 18px;
+  background-color: #38a169;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-confirm:hover {
+  background-color: #2f855a;
+}
+
+.btn-secondary, .btn-primary {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: 1px solid #cbd5e0;
+  background: white;
+  color: #4a5568;
+}
+
+.btn-primary {
+  background-color: #3182ce;
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #2b6cb0;
+}
+
+.empty-cart-msg {
+  text-align: center;
+  padding: 40px;
+  background: #f7fafc;
+  border-radius: 8px;
+}
+
+.confirmed-card {
+  text-align: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 40px 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.success-badge {
+  display: inline-block;
+  background-color: #c6f6d5;
+  color: #22543d;
+  font-weight: bold;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 15px;
+}
+
+.confirmed-items {
+  max-width: 500px;
+  margin: 20px auto;
+  text-align: left;
+  background: #f7fafc;
+  padding: 15px 25px;
+  border-radius: 8px;
+}
+
+.final-total {
+  text-align: right;
+  margin-top: 15px;
+  color: #2b6cb0;
+}
