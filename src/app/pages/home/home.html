@@ -11,7 +11,7 @@
   }
 
   <div class="filtros">
-    @for (cat of categorias; track cat) {
+    @for (cat of categorias(); track cat) {
       <button
         [class.activo]="cat === categoriaSeleccionada()"
         (click)="seleccionarCategoria(cat)">

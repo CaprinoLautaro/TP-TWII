@@ -1,37 +1,49 @@
 import { Component, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { Product } from '../../models/product/product';
 import { ProductService } from '../../services/productService/product-service';
+import { Product } from '../../models/product/product';
+
+interface Mensaje {
+  tipo: 'ok' | 'error';
+  texto: string;
+}
 
 @Component({
   imports: [RouterLink],
   selector: 'app-stock-manager',
   styleUrl: './stock-manager.css',
   templateUrl: './stock-manager.html',
+  standalone: true,
 })
 export class StockManager {
   private readonly productService = inject(ProductService);
 
-  readonly productos = toSignal(this.productService.getProductos(), { initialValue: [] as Product[] });
-  readonly mensaje = signal<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  readonly productos = this.productService.listaProductos;
 
-  private timeoutMensaje: ReturnType<typeof setTimeout> | undefined;
+  readonly mensaje = signal<Mensaje | null>(null);
 
-  /** `valor` es el texto crudo del input: un campo vacío no debe interpretarse como 0. */
-  guardar(producto: Product, valor: string) {
-    const nuevoStock = valor.trim() === '' ? NaN : Number(valor);
 
-    this.productService.actualizarStock(producto.id, nuevoStock).subscribe({
-      next: () =>
-        this.mostrarMensaje('ok', `Stock de "${producto.nombre}" actualizado a ${nuevoStock}.`),
-      error: (err: Error) => this.mostrarMensaje('error', err.message),
+  guardar(producto: Product, stockStr: string): void {
+    const stock = Number(stockStr);
+    if (!Number.isInteger(stock) || stock < 0) {
+      this.mensaje.set({ tipo: 'error', texto: 'Ingresá un número entero mayor o igual a 0.' });
+      this.limpiarMensaje();
+      return;
+    }
+
+    this.productService.actualizarStock(producto.id, stock).subscribe({
+      next: () => {
+        this.mensaje.set({ tipo: 'ok', texto: `Stock de "${producto.nombre}" actualizado.` });
+        this.limpiarMensaje();
+      },
+      error: (e) => {
+        this.mensaje.set({ tipo: 'error', texto: e.message });
+        this.limpiarMensaje();
+      },
     });
   }
 
-  private mostrarMensaje(tipo: 'ok' | 'error', texto: string) {
-    this.mensaje.set({ tipo, texto });
-    clearTimeout(this.timeoutMensaje);
-    this.timeoutMensaje = setTimeout(() => this.mensaje.set(null), 3500);
+  private limpiarMensaje(): void {
+    setTimeout(() => this.mensaje.set(null), 3000);
   }
 }

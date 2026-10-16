@@ -3,7 +3,7 @@
 
   <button class="hamburguesa" (click)="toggleMenu()" aria-label="Abrir menú">☰</button>
 
-  <nav class="menu" [class.abierto]="menuAbierto">
+  <nav class="menu" [class.abierto]="menuAbierto()">
     <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }" (click)="cerrarMenu()">Inicio</a>
 
     <a routerLink="/cart" routerLinkActive="activo" class="carrito" (click)="cerrarMenu()">
