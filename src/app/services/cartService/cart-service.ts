@@ -92,6 +92,10 @@ export class CartService {
     return of(items);
   }
 
+ vaciar(): void {
+    this.guardar([]);
+  }
+
   private guardar(items: CartItem[]): void {
     this.items.set(items);
     try {

@@ -240,3 +240,39 @@
   margin-top: 15px;
   color: #2b6cb0;
 }
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  background-color: #fcfcfc;
+}
+
+.payment-option:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.payment-option.selected {
+  border-color: #38a169;
+  background-color: #f0fff4;
+  font-weight: 600;
+}
+
+.payment-option input[type="radio"] {
+  cursor: pointer;
+  accent-color: #38a169;
+}

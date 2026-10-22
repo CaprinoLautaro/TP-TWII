@@ -57,6 +57,42 @@
 
               <hr class="divider" />
 
+              <h3>💳 Forma de Pago</h3>
+              <div class="payment-options">
+                <label class="payment-option" [class.selected]="metodoPagoSeleccionado === 'Efectivo contra entrega'">
+                  <input 
+                    type="radio" 
+                    name="metodoPago" 
+                    [checked]="metodoPagoSeleccionado === 'Efectivo contra entrega'"
+                    (change)="seleccionarMetodoPago('Efectivo contra entrega')"
+                  />
+                  <span>💵 Efectivo </span>
+                </label>
+
+                <label class="payment-option" [class.selected]="metodoPagoSeleccionado === 'Transferencia bancaria'">
+                  <input 
+                    type="radio" 
+                    name="metodoPago" 
+                    [checked]="metodoPagoSeleccionado === 'Transferencia bancaria'"
+                    (change)="seleccionarMetodoPago('Transferencia bancaria')"
+                  />
+                  <span>📱 Transferencia bancaria (Alias)</span>
+                </label>
+
+                <label class="payment-option" [class.selected]="metodoPagoSeleccionado === 'Tarjeta / Débito'">
+                  <input 
+                    type="radio" 
+                    name="metodoPago" 
+                    [checked]="metodoPagoSeleccionado === 'Tarjeta / Débito'"
+                    (change)="seleccionarMetodoPago('Tarjeta / Débito')"
+                  />
+                  <span>💳 Tarjeta Débito / Crédito</span>
+                </label>
+              </div>
+
+              <hr class="divider" />
+
+              <!-- Cobro -->
               <h3>Detalle de Cobro</h3>
               <div class="summary-line">
                 <span>Subtotal productos:</span>
@@ -93,6 +129,7 @@
       <div class="confirmation-info">
         <p>Se enviara el comprobante a <strong>{{ pedidoConfirmado.usuario.email }}</strong>.</p>
         <p>Dirección de destino: <strong>{{ pedidoConfirmado.usuario.direccion }}</strong></p>
+        <p>Medio de pago: <strong>{{ pedidoConfirmado.metodoPago }}</strong></p>
       </div>
 
       <div class="confirmed-items">
