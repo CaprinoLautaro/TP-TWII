@@ -1,0 +1,41 @@
+<div class="profile-wrapper">
+  <div class="profile-card">
+    <h2>👤 Mi perfil</h2>
+    @if (auth.esAdmin()) {
+      <p class="rol">Cuenta de administrador (solo lectura)</p>
+    }
+
+    @if (mensaje(); as msg) {
+      <div class="aviso" [class.error]="msg.tipo === 'error'">{{ msg.texto }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" class="form-control" [value]="auth.usuarioActual()?.email ?? ''" disabled />
+      </div>
+
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" class="form-control" [class.invalid]="invalido('nombre')" formControlName="nombre" />
+        @if (invalido('nombre')) { <small class="error-text">El nombre es obligatorio.</small> }
+      </div>
+
+      <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input id="apellido" class="form-control" [class.invalid]="invalido('apellido')" formControlName="apellido" />
+        @if (invalido('apellido')) { <small class="error-text">El apellido es obligatorio.</small> }
+      </div>
+
+      <div class="form-group">
+        <label for="direccion">Dirección</label>
+        <input id="direccion" class="form-control" [class.invalid]="invalido('direccion')" formControlName="direccion" />
+        @if (invalido('direccion')) { <small class="error-text">La dirección es obligatoria.</small> }
+      </div>
+
+      @if (!auth.esAdmin()) {
+        <button type="submit" class="btn-submit" [disabled]="form.invalid">Guardar cambios</button>
+      }
+    </form>
+  </div>
+</div>

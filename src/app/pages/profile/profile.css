@@ -1,0 +1,16 @@
+.profile-wrapper { display: flex; justify-content: center; padding: 40px 20px; background: #f9f9f9; min-height: calc(100vh - 80px); }
+.profile-card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.08); width: 100%; max-width: 450px; padding: 32px; height: fit-content; }
+h2 { margin: 0 0 16px; color: #333; text-align: center; }
+.rol { text-align: center; color: #888; font-size: 13px; margin-top: -8px; }
+.form-group { margin-bottom: 18px; }
+label { display: block; font-weight: 600; font-size: 14px; color: #444; margin-bottom: 6px; }
+.form-control { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 20px; font-size: 14px; box-sizing: border-box; outline: none; }
+.form-control:focus { border-color: #ff7a3d; box-shadow: 0 0 0 3px rgba(255,122,61,.15); }
+.form-control:disabled { background: #f3f3f3; color: #888; }
+.form-control.invalid { border-color: #e53e3e; }
+.error-text { color: #e53e3e; font-size: 12px; margin-top: 4px; display: block; }
+.btn-submit { width: 100%; background: #ff7a3d; color: #fff; border: none; border-radius: 20px; padding: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+.btn-submit:hover:not(:disabled) { background: #e66327; }
+.btn-submit:disabled { background: #fca37d; cursor: not-allowed; }
+.aviso { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; padding: 10px 14px; border-radius: 12px; font-size: 13px; margin-bottom: 16px; }
+.aviso.error { background: #fff5f5; color: #c53030; border-color: #feb2b2; }

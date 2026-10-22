@@ -3,6 +3,7 @@
   <div class="signin-card">
 
     <div class="signin-header">
+      <div *ngIf="mensajeError" class="alert-danger">{{ mensajeError }}</div>
       <div class="signin-logo">
         🐾 Patitas
       </div>

@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors} from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { inject } from '@angular/core';
+import { AuthService } from '../../services/authService/auth-service';
 
 
 @Component({
@@ -16,7 +18,11 @@ export class Signup {
   mensajeError: string = '';
   registroExitoso: boolean = false;
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+  private fb: FormBuilder,
+  private auth: AuthService,
+  private router: Router,
+) {
     this.registroForm = this.fb.group({
       nombre: ['', [Validators.required]],
       apellido: ['', [Validators.required]],
@@ -38,11 +44,16 @@ export class Signup {
     return esValida ? null : { passwordDebil: true };
   }
 
-  onSubmit(): void {
-    if (this.registroForm.invalid) {
-      this.registroForm.markAllAsTouched();
-      return;
-    }
-    console.log('Datos Enviados: ', this.registroForm.value)
+onSubmit(): void {
+  this.mensajeError = '';
+  if (this.registroForm.invalid) {
+    this.registroForm.markAllAsTouched();
+    return;
   }
+  const { nombre, apellido, email, direccion, password } = this.registroForm.value;
+  this.auth.registrar({ nombre, apellido, email, direccion, password }).subscribe({
+    next: () => this.router.navigate(['/']), // queda con la sesión iniciada
+    error: (err: Error) => (this.mensajeError = err.message),
+  });
+}
 }

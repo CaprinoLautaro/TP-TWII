@@ -5,36 +5,34 @@
 
 <section class="catalogo">
   @if (mensaje(); as msg) {
-    <div class="aviso" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
-      {{ msg.texto }}
-    </div>
+  <div class="aviso" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
+    {{ msg.texto }}
+  </div>
   }
 
   <div class="filtros">
     @for (cat of categorias(); track cat) {
-      <button
-        [class.activo]="cat === categoriaSeleccionada()"
-        (click)="seleccionarCategoria(cat)">
-        {{ cat }}
-      </button>
+    <button [class.activo]="cat === categoriaSeleccionada()" (click)="seleccionarCategoria(cat)">
+      {{ cat }}
+    </button>
     }
+    @if (esAdmin()) {
     <div class="bonotes">
-    <a routerLink="/productos/nuevo" class="btn-nuevo">+ Cargar producto</a>
-    <a routerLink="/productos/stock" class="btn-nuevo">Gestionar stock</a>
+      <a routerLink="/productos/nuevo" class="btn-nuevo">+ Cargar producto</a>
+      <a routerLink="/productos/stock" class="btn-nuevo">Gestionar stock</a>
     </div>
+    }
   </div>
 
   @if (productosFiltrados().length === 0) {
-    <p class="vacio">No hay productos en esta categoría.</p>
+  <p class="vacio">No hay productos en esta categoría.</p>
   }
 
   <div class="grilla">
     @for (producto of productosFiltrados(); track producto.id) {
-      <app-product-card-component
-        [product]="producto"
-        [enCarrito]="cantidadEnCarrito(producto.id)"
-        (agregar)="agregarAlCarrito($event)">
-      </app-product-card-component>
+    <app-product-card-component [product]="producto" [enCarrito]="cantidadEnCarrito(producto.id)"
+      (agregar)="agregarAlCarrito($event)">
+    </app-product-card-component>
     }
   </div>
 </section>

@@ -4,6 +4,8 @@ import { CartService } from '../../services/cartService/cart-service';
 import { ProductService } from '../../services/productService/product-service';
 import { ProductCardComponent } from '../../Comps/product-card-component/product-card-component';
 import { Product } from '../../models/product/product';
+import { AuthService } from '../../services/authService/auth-service';
+
 
 interface Mensaje {
   tipo: 'ok' | 'error';
@@ -18,6 +20,8 @@ interface Mensaje {
   standalone: true,
 })
 export class Home {
+  private readonly auth = inject(AuthService);
+readonly esAdmin = this.auth.esAdmin;
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   readonly productos = this.productService.listaProductos;
