@@ -1,42 +1,27 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Injectable, signal } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { IMAGEN_POR_DEFECTO, NuevoProducto, Product } from '../../models/product/product';
-import { validarProducto, validarStock  } from '../../models/product/product-rules';
+import { validarProducto, validarStock } from '../../models/product/product-rules';
+import { PRODUCTOS_INICIALES } from '../../data/productos-iniciales';
 
 const STORAGE_KEY = 'patitas_productos';
 
-const PRODUCTOS_INICIALES: Product[] = [
-  { id: 1, nombre: 'Alimento Premium para Perros 15kg', descripcion: 'Balanceado adulto con pollo y arroz, razas medianas y grandes.', clasificacion: 'Alimento', precio: 48000, stock: 10, imagen: '/img/productos/comida-para-perros.jpg' },
-  { id: 2, nombre: 'Alimento para Gatos 7,5kg', descripcion: 'Con salmón y omega 3, ideal para pelo brillante.', clasificacion: 'Alimento', precio: 36000, stock: 8, imagen: 'img/productos/comida-para-gato.jpg' },
-  { id: 3, nombre: 'Pelota de Goma para Perros', descripcion: 'Resistente a mordidas, rebota y flota en el agua.', clasificacion: 'Juguetes', precio: 5500, stock: 25, imagen: 'img/productos/pelota-para-perros.jpg' },
-  { id: 4, nombre: 'Rascador para Gatos', descripcion: 'Torre de sisal con plataforma y ratón colgante.', clasificacion: 'Juguetes', precio: 29000, stock: 2, imagen: 'img/productos/rascador-para-gatos.png' },
-  { id: 5, nombre: 'Collar Ajustable con Chapita', descripcion: 'Nylon reforzado, disponible en varios colores.', clasificacion: 'Accesorios', precio: 7800, stock: 15, imagen: 'img/productos/collar-ajustable-con-chapita.png' },
-  { id: 6, nombre: 'Correa Retráctil 5m', descripcion: 'Con freno de seguridad y mango ergonómico.', clasificacion: 'Accesorios', precio: 14500, stock: 0, imagen: 'img/productos/correa.png' },
-  { id: 7, nombre: 'Shampoo Hipoalergénico', descripcion: 'Para perros y gatos de piel sensible, 500ml.', clasificacion: 'Higiene', precio: 9200, stock: 12, imagen: 'img/productos/shampoo-hipoalergenico.jpg' },
-  { id: 8, nombre: 'Cama Acolchada Mediana', descripcion: 'Lavable, base antideslizante, ideal para perros y gatos.', clasificacion: 'Camas', precio: 32000, stock: 5, imagen: 'img/productos/colchon-mediano.jpg' },
-];
-
 /**
  * Hoy los datos viven en memoria (con respaldo en localStorage para que no se pierdan al recargar).
- * Todos los métodos devuelven Observables y se parecen a endpoints REST:
- * cuando esté el backend solo cambia el interior de cada método por un this.http.get/post.
+ * El estado se expone como Signal (lectura reactiva) y las escrituras que simulan
+ * endpoints POST/PATCH se mantienen como Observables para migrar directo a HttpClient.
  */
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private readonly productos$ = new BehaviorSubject<Product[]>(this.cargar());
+  /** Estado interno: Signal con la lista de productos. */
+  private readonly productos = signal<Product[]>(this.cargar());
 
-  /** GET /productos */
-  getProductos(): Observable<Product[]> {
-    return this.productos$.asObservable();
-  }
+  /** Estado expuesto de solo lectura para los componentes. */
+  readonly listaProductos = this.productos.asReadonly();
 
-  /** GET /productos/:id */
-  getProducto(id: number): Observable<Product> {
-    const producto = this.productos$.value.find((p) => p.id === id);
-    return producto
-      ? this.productos$.pipe(map((lista) => lista.find((p) => p.id === id) ?? producto))
-      : throwError(() => new Error('El producto no existe.'));
+  /** GET /productos/:id — lectura síncrona. Devuelve undefined si no existe. */
+  getProducto(id: number): Product | undefined {
+    return this.productos().find((p) => p.id === id);
   }
 
   /** POST /productos */
@@ -46,7 +31,7 @@ export class ProductService {
       return throwError(() => new Error(errores.join(' ')));
     }
 
-    const lista = this.productos$.value;
+    const lista = this.productos();
     const nombreRepetido = lista.some(
       (p) => p.nombre.trim().toLowerCase() === datos.nombre.trim().toLowerCase(),
     );
@@ -62,10 +47,7 @@ export class ProductService {
       id: Math.max(0, ...lista.map((p) => p.id)) + 1,
     };
     this.guardar([...lista, nuevo]);
-    return new Observable<Product>((obs) => {
-      obs.next(nuevo);
-      obs.complete();
-    });
+    return of(nuevo);
   }
 
   /**
@@ -73,7 +55,7 @@ export class ProductService {
    * Descuenta unidades y falla si no alcanza el stock.
    */
   descontarStock(id: number, cantidad: number): Observable<Product> {
-    const lista = this.productos$.value;
+    const lista = this.productos();
     const producto = lista.find((p) => p.id === id);
     if (!producto) {
       return throwError(() => new Error('El producto no existe.'));
@@ -88,14 +70,27 @@ export class ProductService {
     }
     const actualizado: Product = { ...producto, stock: producto.stock - cantidad };
     this.guardar(lista.map((p) => (p.id === id ? actualizado : p)));
-    return new Observable<Product>((obs) => {
-      obs.next(actualizado);
-      obs.complete();
-    });
+    return of(actualizado);
+  }
+
+  /** PATCH /productos/:id/stock (seteo directo) */
+  actualizarStock(id: number, stock: number): Observable<Product> {
+    const error = validarStock(stock);
+    if (error) {
+      return throwError(() => new Error(error));
+    }
+    const lista = this.productos();
+    const producto = lista.find((p) => p.id === id);
+    if (!producto) {
+      return throwError(() => new Error('El producto no existe.'));
+    }
+    const actualizado: Product = { ...producto, stock };
+    this.guardar(lista.map((p) => (p.id === id ? actualizado : p)));
+    return of(actualizado);
   }
 
   private guardar(lista: Product[]): void {
-    this.productos$.next(lista);
+    this.productos.set(lista);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
     } catch {
@@ -115,21 +110,4 @@ export class ProductService {
     }
     return PRODUCTOS_INICIALES;
   }
-
-    actualizarStock(id: number, stock: number): Observable<Product> {
-    const error = validarStock(stock);
-    if (error) {
-      return throwError(() => new Error(error));
-    }
-    const lista = this.productos$.value;
-    const producto = lista.find((p) => p.id === id);
-    if (!producto) {
-      return throwError(() => new Error('El producto no existe.'));
-    }
-    const actualizado: Product = { ...producto, stock };
-    this.guardar(lista.map((p) => (p.id === id ? actualizado : p)));
-    return of(actualizado);
-  }
-
-
 }

@@ -1,27 +1,36 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { CATEGORIAS, Product } from '../../models/product/product';
-import { ProductCardComponent } from '../../Comps/product-card-component/product-card-component';
-import { ProductService } from '../../services/productService/product-service';
 import { CartService } from '../../services/cartService/cart-service';
+import { ProductService } from '../../services/productService/product-service';
+import { ProductCardComponent } from '../../Comps/product-card-component/product-card-component';
+import { Product } from '../../models/product/product';
+
+interface Mensaje {
+  tipo: 'ok' | 'error';
+  texto: string;
+}
 
 @Component({
   imports: [ProductCardComponent, RouterLink],
   selector: 'app-home',
   styleUrl: './home.css',
   templateUrl: './home.html',
+  standalone: true,
 })
 export class Home {
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
+  readonly productos = this.productService.listaProductos;
+  readonly carrito = this.cartService.carrito;
 
-  readonly categorias = ['Todas', ...CATEGORIAS];
-  readonly categoriaSeleccionada = signal('Todas');
-  readonly mensaje = signal<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  readonly mensaje = signal<Mensaje | null>(null);
 
-  private readonly productos = toSignal(this.productService.getProductos(), { initialValue: [] as Product[] });
-  private readonly carrito = toSignal(this.cartService.getCarrito(), { initialValue: [] });
+  readonly categoriaSeleccionada = signal<string>('Todas');
+
+  readonly categorias = computed<string[]>(() => {
+    const unicas = new Set(this.productos().map((p) => p.clasificacion));
+    return ['Todas', ...Array.from(unicas)];
+  });
 
   readonly productosFiltrados = computed(() => {
     const categoria = this.categoriaSeleccionada();
@@ -29,9 +38,7 @@ export class Home {
     return categoria === 'Todas' ? lista : lista.filter((p) => p.clasificacion === categoria);
   });
 
-  private timeoutMensaje: ReturnType<typeof setTimeout> | undefined;
-
-  seleccionarCategoria(categoria: string) {
+  seleccionarCategoria(categoria: string): void {
     this.categoriaSeleccionada.set(categoria);
   }
 
@@ -39,16 +46,20 @@ export class Home {
     return this.carrito().find((i) => i.productId === productId)?.cantidad ?? 0;
   }
 
-  agregarAlCarrito(producto: Product) {
+  agregarAlCarrito(producto: Product): void {
     this.cartService.agregar(producto.id).subscribe({
-      next: () => this.mostrarMensaje('ok', `"${producto.nombre}" agregado al carrito`),
-      error: (err: Error) => this.mostrarMensaje('error', err.message),
+      next: () => {
+        this.mensaje.set({ tipo: 'ok', texto: `"${producto.nombre}" agregado al carrito.` });
+        this.limpiarMensaje();
+      },
+      error: (e) => {
+        this.mensaje.set({ tipo: 'error', texto: e.message });
+        this.limpiarMensaje();
+      },
     });
   }
 
-  private mostrarMensaje(tipo: 'ok' | 'error', texto: string) {
-    this.mensaje.set({ tipo, texto });
-    clearTimeout(this.timeoutMensaje);
-    this.timeoutMensaje = setTimeout(() => this.mensaje.set(null), 3500);
+  private limpiarMensaje(): void {
+    setTimeout(() => this.mensaje.set(null), 3000);
   }
 }

@@ -1,1 +1,47 @@
-<p>cart works!</p>
+<section class="cart">
+  <h1>Tu carrito</h1>
+
+  @if (vacio()) {
+    <div class="cart-vacio">
+      <p>Tu carrito está vacío.</p>
+      <a routerLink="/" class="btn">Ver productos</a>
+    </div>
+  } @else {
+    <ul class="cart-lista">
+      @for (item of detalle(); track item.productId) {
+        <li class="cart-item">
+          <img [src]="item.producto.imagen" [alt]="item.producto.nombre" />
+
+          <div class="cart-item-info">
+            <h3>{{ item.producto.nombre }}</h3>
+            <p class="precio-unitario">{{ item.producto.precio | currency:'ARS':'symbol':'1.0-0' }} c/u</p>
+          </div>
+
+          <div class="cart-item-cantidad">
+            <button (click)="decrementar(item.productId)" aria-label="Restar">−</button>
+            <span>{{ item.cantidad }}</span>
+            <button (click)="incrementar(item.productId)" aria-label="Sumar">+</button>
+          </div>
+
+          <div class="cart-item-subtotal">
+            {{ item.subtotal | currency:'ARS':'symbol':'1.0-0' }}
+          </div>
+
+          <button class="btn-quitar" (click)="quitar(item.productId)" aria-label="Quitar">
+            Quitar
+          </button>
+        </li>
+      }
+    </ul>
+
+    <footer class="cart-resumen">
+      <div class="cart-total">
+        <span>Total ({{ cantidadTotal() }} {{ cantidadTotal() === 1 ? 'unidad' : 'unidades' }})</span>
+        <strong>{{ total() | currency:'ARS':'symbol':'1.0-0' }}</strong>
+      </div>
+      <button class="btn-confirmar" (click)="confirmarCompra()">
+        Confirmar compra
+      </button>
+    </footer>
+  }
+</section>
