@@ -1,1 +1,59 @@
-<p>signin works!</p>
+
+<div class="signin-wrapper">
+  <div class="signin-card">
+
+    <div class="signin-header">
+      <div class="signin-logo">
+        🐾 Patitas
+      </div>
+      <h2 class="signin-title">Iniciá sesión</h2>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          class="form-control"
+          placeholder="nombre@ejemplo.com"
+          formControlName="email">
+      </div>
+      <small
+        class="error-text"
+        *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+        Ingresa un email valido.
+      </small>
+
+      <!-- Contraseña -->
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input
+          id="password"
+          type="password"
+          class="form-control"
+          placeholder="••••••••"
+          formControlName="password">
+      </div>
+      <small
+        class="error-text"
+        *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+        La contraseña es obligatoria
+      </small>
+
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="loginForm.invalid">
+        Iniciar sesión
+      </button>
+    </form>
+
+    <div class="signin-footer">
+      ¿No tenés una cuenta? <a routerLink="/signup">Registrate</a>
+    </div>
+
+  </div>
+</div>
+
