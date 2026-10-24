@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { Product } from '../../models/product/product';
 import { stockDisponible } from '../../models/product/product-rules';
 import { CurrencyPipe } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   imports: [CurrencyPipe],
@@ -10,6 +11,7 @@ import { CurrencyPipe } from '@angular/common';
   templateUrl: './product-card-component.html',
 })
 export class ProductCardComponent {
+  private readonly router = inject(Router);
   @Input() product!: Product;
   /** Unidades de este producto que ya están en el carrito. */
   @Input() enCarrito = 0;
@@ -32,4 +34,8 @@ export class ProductCardComponent {
       this.agregar.emit(this.product);
     }
   }
+
+  irAlDetalle() {
+  this.router.navigate(['/producto', this.product.id]);
+}
 }

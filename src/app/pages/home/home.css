@@ -7,8 +7,7 @@
 .hero h1 { margin: 0 0 8px; font-size: 36px; }
 .hero p { margin: 0; font-size: 18px; opacity: 0.9; }
 
-.catalogo { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
-
+.catalogo { max-width: 1300px; margin: 0 auto; padding: 32px 24px; }
 .filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
 .filtros button {
   border: 1px solid #ff7a45;
@@ -22,8 +21,8 @@
 
 .grilla {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 28px;
 }
 .vacio { text-align: center; color: #888; }
 

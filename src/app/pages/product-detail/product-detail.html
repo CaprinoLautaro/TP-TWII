@@ -1,0 +1,62 @@
+<section class="detalle">
+  <a routerLink="/" class="volver">← Volver al catálogo</a>
+
+  @if (mensaje(); as msg) {
+    <div class="aviso" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
+      {{ msg.texto }}
+    </div>
+  }
+
+  @if (producto(); as p) {
+    <div class="contenido">
+      <div class="imagen" [class.agotado]="p.stock <= 0">
+        <img [src]="p.imagen" [alt]="p.nombre" />
+      </div>
+
+      <div class="info">
+        <span class="categoria">{{ p.clasificacion }}</span>
+        <h1>{{ p.nombre }}</h1>
+        <p class="precio">{{ p.precio | currency:'ARS':'symbol-narrow':'1.0-0' }}</p>
+        <p class="descripcion">{{ p.descripcion }}</p>
+
+        @if (p.stock <= 0) {
+          <p class="stock sin-stock">Agotado</p>
+        } @else if (p.stock <= 3) {
+          <p class="stock pocas">¡Últimas {{ p.stock }} unidades!</p>
+        } @else {
+          <p class="stock">Stock disponible: {{ p.stock }}</p>
+        }
+
+        @if (enCarrito() > 0) {
+          <p class="en-carrito">Ya tenés {{ enCarrito() }} en el carrito</p>
+        }
+
+        @if (disponible() > 0) {
+          <div class="selector">
+            <button type="button" class="paso" (click)="restar()" [disabled]="cantidad() <= 1" aria-label="Menos">−</button>
+            <span class="cantidad">{{ cantidad() }}</span>
+            <button type="button" class="paso" (click)="sumar()" [disabled]="cantidad() >= disponible()" aria-label="Más">+</button>
+          </div>
+        }
+
+        <button type="button" class="btn-agregar" (click)="agregar()" [disabled]="disponible() === 0">
+          @if (p.stock <= 0) {
+            Sin stock
+          } @else if (disponible() === 0) {
+            Máximo en carrito
+          } @else {
+            Agregar al carrito
+          }
+        </button>
+
+        <a routerLink="/cart" class="ir-carrito">Ver carrito →</a>
+      </div>
+    </div>
+  } @else {
+    <div class="no-existe">
+      <h2>😿 Este producto no existe</h2>
+      <p>Puede que haya sido eliminado o que el link sea incorrecto.</p>
+      <a routerLink="/" class="btn-agregar">Volver al catálogo</a>
+    </div>
+  }
+</section>

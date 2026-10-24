@@ -1,4 +1,5 @@
-<article class="card" [class.agotado]="agotado">
+<article class="card" [class.agotado]="agotado" tabindex="0" role="link" (click)="irAlDetalle()"
+  (keydown.enter)="irAlDetalle()">
   <img [src]="product.imagen" [alt]="product.nombre" />
   <div class="card-body">
     <span class="categoria">{{ product.clasificacion }}</span>
@@ -6,22 +7,23 @@
     <p class="descripcion">{{ product.descripcion }}</p>
 
     @if (agotado) {
-      <span class="stock sin-stock">Agotado</span>
+    <span class="stock sin-stock">Agotado</span>
     } @else if (pocasUnidades) {
-      <span class="stock pocas">¡Últimas {{ product.stock }} unidades!</span>
+    <span class="stock pocas">¡Últimas {{ product.stock }} unidades!</span>
     } @else {
-      <span class="stock">Stock: {{ product.stock }}</span>
+    <span class="stock">Stock: {{ product.stock }}</span>
     }
 
     <div class="card-footer">
       <span class="precio">{{ product.precio | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
-      <button (click)="onAgregar()" [disabled]="disponible === 0">
+      <button (click)="onAgregar(); $event.stopPropagation()" (keydown.enter)="$event.stopPropagation()"
+        [disabled]="disponible === 0">
         @if (agotado) {
-          Sin stock
+        Sin stock
         } @else if (disponible === 0) {
-          Máximo en carrito
+        Máximo en carrito
         } @else {
-          Agregar al carrito
+        Agregar al carrito
         }
       </button>
     </div>
