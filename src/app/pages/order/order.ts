@@ -1,127 +1,213 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { CurrencyPipe, DatePipe} from '@angular/common';
-import { Router, RouterModule} from '@angular/router';
-import { Subject } from 'rxjs';
+import { Component, OnInit, OnDestroy, inject, Signal, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
+import { CartService } from '../../services/cartService/cart-service';
+import { ProductService } from '../../services/productService/product-service';
+import { AuthService } from '../../services/authService/auth-service';
 import { Product } from '../../models/product/product';
 import { Usuario } from '../../models/user/user';
+import creditCardType from 'credit-card-type';
 
 
-export interface OrderItemDetaill {
+export interface OrderItemDetail {
   producto: Product;
   cantidad: number;
   subtotal: number;
 }
 
-export interface OrderConfirmation{
+export interface OrderConfirmation {
   orderId: string;
   fecha: Date;
   usuario: Omit<Usuario, 'password'>;
-  items: OrderItemDetaill[];
-  total:number;
+  items: OrderItemDetail[];
+  total: number;
+  ultimosDigitosTarjeta: string;
 }
 
 @Component({
-  imports: [ CurrencyPipe, DatePipe, RouterModule ],
   selector: 'app-order',
-  styleUrl: './order.css',
+  imports: [CurrencyPipe, DatePipe, RouterModule, ReactiveFormsModule],
   templateUrl: './order.html',
+  styleUrl: './order.css',
 })
-export class Order implements OnInit, OnDestroy{
-
+export class Order implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+  private readonly cartService = inject(CartService);
+  private readonly productService = inject(ProductService);
+  private readonly authService = inject(AuthService);
   private readonly destroy$ = new Subject<void>();
 
-  public fechaActual:Date = new Date();
-  public cargando: boolean = false;
-  public pedidoConfirmado: OrderConfirmation | null = null;
+  public fechaActual: Date = new Date();
+  public cargando = signal<boolean>(false);
+  public errorPago: string | null = null;
+  public pedidoConfirmado = signal<OrderConfirmation | null>(null);
+  public tipoTarjeta = signal<string | null>(null);
+  public logoOk = signal(true);
 
-  // Por el momento, productos de prueba
-  public itemsDetalle: OrderItemDetaill[] = [
-    {
-      producto: {
-        id: 1,
-        nombre: 'Collar Ajustable con Chapita',
-        descripcion: 'Nylon reforzado, disponible en varios colores.',
-        clasificacion: 'Perros',
-        precio: 42500,
-        stock: 15,
-        imagen: 'img/productos/collar-ajustable-con-chapita.png'
-      },
-      cantidad: 1,
-      subtotal: 42500
-    },
-    {
-      producto: {
-        id: 2,
-        nombre: 'Pelota de Goma para Perros',
-        descripcion: 'Resistente a mordidas, rebota y flota en el agua.',
-        clasificacion: 'Perros',
-        precio: 18900,
-        stock: 20,
-        imagen: 'img/productos/pelota-para-perros.jpg'
-      },
-      cantidad: 2,
-      subtotal: 37800
-    },
-    {
-      producto: {
-        id: 3,
-        nombre: 'Shampoo Hipoalergénico',
-        descripcion: 'Para perros y gatos de piel sensible, 500ml.',
-        clasificacion: 'Accesorios',
-        precio: 12400,
-        stock: 65,
-        imagen: 'img/productos/shampoo-hipoalergenico.jpg'
-      },
-      cantidad: 1,
-      subtotal: 12400
-    }
+  /** Logo de la marca detectada (CDN icons8) con fallback genérico. */
+  private readonly logoGenerico = 'https://img.icons8.com/color/96/bank-card-front.png';
+  private readonly logoPorTipo: Record<string, string> = {
+    'visa': 'https://img.icons8.com/color/96/visa.png',
+    'mastercard': 'https://img.icons8.com/color/96/mastercard.png',
+    'american-express': 'https://img.icons8.com/color/96/amex.png',
+    'maestro': 'https://img.icons8.com/color/96/maestro.png',
+    'diners-club': 'https://img.icons8.com/color/96/diners-club.png',
+    'discover': 'https://img.icons8.com/color/96/discover.png',
+    'jcb': 'https://img.icons8.com/color/96/jcb.png',
+    'unionpay': 'https://img.icons8.com/color/96/unionpay.png',
+    'cabal': 'https://img.icons8.com/color/96/bank-card-back.png',
+    'naranja': 'https://img.icons8.com/color/96/bank-card-back.png',
+    'hipercard': 'https://img.icons8.com/color/96/bank-card-back.png',
+    'elo': 'https://img.icons8.com/color/96/bank-card-back.png',
+    'shopping': 'https://img.icons8.com/color/96/bank-card-back.png',
+    'argencard': 'https://img.icons8.com/color/96/bank-card-back.png',
+  };
 
-  ];
-
-  ngOnInit(): void {
-
+  private claveTarjeta(): string {
+    return (this.tipoTarjeta() ?? '').toLowerCase().replace(/\s/g, '-');
   }
 
-  ngOnDestroy(): void{
+  public get logoTarjeta(): string | null {
+    const tipo = this.tipoTarjeta();
+    if (!tipo) return null;
+    if (!this.logoOk()) return this.logoGenerico;
+    return this.logoPorTipo[this.claveTarjeta()] ?? this.logoGenerico;
+  }
+
+  public logoBroken(): void {
+    this.logoOk.set(false);
+  }
+
+
+
+  public itemsDetalle: OrderItemDetail[] = [];
+  public pagoForm!: FormGroup;
+
+  ngOnInit(): void {
+    this.initForm();
+    this.cargarItemsCarrito();
+  }
+
+  ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  get total():number {
-    return this.itemsDetalle.reduce((total, item )=> total + item.subtotal, 0);
+  private initForm(): void {
+    this.pagoForm = this.fb.group({
+      numeroTarjeta: ['', [Validators.required, this.numeroTarjetaValidator()]],
+      nombreTitular: ['', [Validators.required, Validators.minLength(3)]],
+      vencimiento: ['', [Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])\/?([0-9]{2})$/)]],
+      cvv: ['', [Validators.required, this.cvvValidator()]],
+      dniTitular: ['', [Validators.required, Validators.pattern(/^\d{7,8}$/)]],
+    });
+  }
+
+  /** Largo según la marca detectada: Amex 15 dígitos, resto 16. */
+  private numeroTarjetaValidator(): ValidatorFn {
+    return (ctrl: AbstractControl): ValidationErrors | null => {
+      const limpio = (ctrl.value ?? '').toString().replace(/\D/g, '');
+      if (!limpio) return null; // el required cubre el vacío
+      const largo = this.claveTarjeta() === 'american-express' ? 15 : 16;
+      return new RegExp(`^\\d{${largo}}$`).test(limpio) ? null : { tarjetaInvalida: true };
+    };
+  }
+
+  /** CVV según la marca detectada: Amex 4 dígitos, resto 3. */
+  private cvvValidator(): ValidatorFn {
+    return (ctrl: AbstractControl): ValidationErrors | null => {
+      const valor = (ctrl.value ?? '').toString();
+      if (!valor) return null; // el required cubre el vacío
+      const largo = this.claveTarjeta() === 'american-express' ? 4 : 3;
+      return new RegExp(`^\\d{${largo}}$`).test(valor) ? null : { cvvInvalido: true };
+    };
+  }
+
+  private cargarItemsCarrito(): void {
+    const carritoItems = this.cartService.carrito();
+    this.itemsDetalle = carritoItems
+      .map((item) => {
+        const prod = this.productService.getProducto(item.productId);
+        if (!prod) return null;
+        return {
+          producto: prod,
+          cantidad: item.cantidad,
+          subtotal: prod.precio * item.cantidad,
+        };
+      })
+      .filter((i): i is OrderItemDetail => i !== null);
+  }
+
+  get total(): number {
+    return this.itemsDetalle.reduce((acc, item) => acc + item.subtotal, 0);
   }
 
   get totalUnidades(): number {
-    return this.itemsDetalle.reduce((total, item)=> total + item.cantidad, 0);
+    return this.itemsDetalle.reduce((acc, item) => acc + item.cantidad, 0);
   }
 
   get usuarioActual() {
-    return {
-      nombre: 'Juan',
-      apellido: 'Perez',
-      email: 'juan.perez@ejemplo.com',
-      direccion: 'Av.Corrientes 1234, CABA'
+    const user = this.authService.usuarioActual();
+    return user || {
+      nombre: 'Invitado',
+      apellido: 'Patitas',
+      email: 'invitado@patitas.com',
+      direccion: 'Sin dirección registrada',
     };
   }
 
-  confirmarPedido(): void {
-    if(this.itemsDetalle.length == 0){
-      alert('No podes confirmar un pedido sin productos.');
-      return;
-    }
+ procesarPago(): void {
+  if (this.itemsDetalle.length === 0) {
+    alert('No podés confirmar un pedido sin productos.');
+    return;
+  }
 
-    this.pedidoConfirmado = {
+  if (this.pagoForm.invalid) {
+    this.pagoForm.markAllAsTouched();
+    return;
+  }
+
+  this.cargando.set(true);
+  this.errorPago = null;
+
+  setTimeout(() => {
+    this.cargando.set(false);
+    const numTarjeta = (this.pagoForm.get('numeroTarjeta')?.value || '').replace(/\D/g, '');
+    const ultimosDigitos = `${this.tipoTarjeta() ?? 'Tarjeta'} ****${numTarjeta.slice(-4)}`;
+
+    this.pedidoConfirmado.set({
       orderId: 'PED-' + Math.floor(100000 + Math.random() * 900000),
       fecha: new Date(),
-      usuario: {...this.usuarioActual},
+      usuario: { ...this.usuarioActual },
       items: [...this.itemsDetalle],
-      total: this.total
-    };
+      total: this.total,
+      ultimosDigitosTarjeta: ultimosDigitos,
+    });
+  }, 2000);
+}
+
+  volverAlCatalogo(): void {
+    this.router.navigate(['']);
   }
 
-    volverAlCatalogo(): void {
-      this.router.navigate(['']);
+  onTarjetaInput(v: string): void {
+    const limpio = (v ?? '').replace(/\D/g, '');
+    if (!limpio) {
+      this.tipoTarjeta.set(null);
+      return;
     }
-
+    const matches = creditCardType(limpio);
+    if (matches.length > 0) {
+      // sticky: si matchean varias (ej "4"), creditCardType ya ordena por prioridad
+      this.tipoTarjeta.set(matches[0].niceType);
+      this.logoOk.set(true);
+    }
+    // si matches es vacio (prefijo trampa ej "306") conservamos el ultimo tipo
+    this.pagoForm.get('numeroTarjeta')?.updateValueAndValidity();
+    this.pagoForm.get('cvv')?.updateValueAndValidity();
+  }
+  
 }
