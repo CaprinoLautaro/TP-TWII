@@ -8,7 +8,7 @@ const app = express();
 
 // El frontend de Angular corre en el puerto 4200.
 app.use(cors({ origin: config.corsOrigin }));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' })); // las imágenes del formulario viajan como texto base64
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

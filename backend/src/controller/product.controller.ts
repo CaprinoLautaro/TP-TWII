@@ -13,8 +13,20 @@ export class ProductController {
   };
 
   getById = async (req: Request, res: Response) => {
+    res.json(await this.service.getById(this.leerId(req)));
+  };
+
+  create = async (req: Request, res: Response) => {
+    res.status(201).json(await this.service.create(req.body));
+  };
+
+  updateStock = async (req: Request, res: Response) => {
+    res.json(await this.service.updateStock(this.leerId(req), req.body));
+  };
+
+  private leerId(req: Request): number {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) throw AppError.badRequest('El id debe ser un número.');
-    res.json(await this.service.getById(id));
-  };
+    return id;
+  }
 }

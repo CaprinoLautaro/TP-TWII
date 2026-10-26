@@ -25,6 +25,9 @@ export class ProductDetail {
   );
 
   /** null = el producto no existe. Se actualiza solo si cambia el stock. */
+  /** true mientras el backend no respondió: evita mostrar "no existe" por error. */
+  readonly cargando = this.productService.cargando;
+
   readonly producto = computed(() => this.productService.getProducto(this.id()) ?? null);
 
   readonly cantidad = signal(1);

@@ -1,5 +1,6 @@
 import type { Product } from '../../generated/prisma/client';
 import { AppError } from '../utils/app-error';
+import { parseCreateProduct, parseStock } from '../utils/product-rules';
 import type { ProductRepository } from '../repository/product.repository';
 import type { ProductFilters } from '../types/product.types';
 
@@ -17,5 +18,19 @@ export class ProductService {
     return product;
   }
 
-  // TODO (opcional, admin): create(...) validando campos y nombre repetido (409), updateStock(...)
+  /** `body` es lo que llegó por HTTP, sin tipar: se valida acá. */
+  async create(body: unknown): Promise<Product> {
+    const datos = parseCreateProduct(body);
+
+    const repetido = await this.repository.findByNombre(datos.nombre);
+    if (repetido) throw AppError.conflict('Ya existe un producto con ese nombre.');
+
+    return this.repository.create(datos);
+  }
+
+  async updateStock(id: number, body: unknown): Promise<Product> {
+    const stock = parseStock(body);
+    await this.getById(id); // 404 si no existe
+    return this.repository.updateStock(id, stock);
+  }
 }

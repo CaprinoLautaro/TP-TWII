@@ -1,62 +1,123 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
+import { API_URL } from '../../config/api.config';
 import { IMAGEN_POR_DEFECTO, NuevoProducto, Product } from '../../models/product/product';
 import { validarProducto, validarStock } from '../../models/product/product-rules';
-import { PRODUCTOS_INICIALES } from '../../data/productos-iniciales';
 
-const STORAGE_KEY = 'patitas_productos';
+/** Convierte un error HTTP en un texto para mostrarle al usuario (el backend manda { error: '...' }). */
+function mensajeDeError(err: unknown, porDefecto: string): string {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status === 0) {
+      return 'No se pudo conectar con el servidor. ¿Está corriendo el backend?';
+    }
+    const mensaje = err.error?.error;
+    if (typeof mensaje === 'string') return mensaje;
+  }
+  return porDefecto;
+}
+
+/** Si un producto no tiene imagen, usamos la de por defecto. */
+function conImagen(p: Product): Product {
+  return { ...p, imagen: p.imagen?.trim() || IMAGEN_POR_DEFECTO };
+}
 
 /**
- * Hoy los datos viven en memoria (con respaldo en localStorage para que no se pierdan al recargar).
- * El estado se expone como Signal (lectura reactiva) y las escrituras que simulan
- * endpoints POST/PATCH se mantienen como Observables para migrar directo a HttpClient.
+ * Los productos viven en la base de datos del backend (PostgreSQL).
+ * Acá se guarda una copia en un Signal para que home, carrito, detalle y pedido
+ * la lean de forma síncrona, y se actualiza cada vez que el backend confirma un cambio.
+ * Las escrituras devuelven Observables, que es lo que ya usaban los componentes.
  */
 @Injectable({ providedIn: 'root' })
 export class ProductService {
+  private readonly http = inject(HttpClient);
+
   /** Estado interno: Signal con la lista de productos. */
-  private readonly productos = signal<Product[]>(this.cargar());
+  private readonly productos = signal<Product[]>([]);
 
   /** Estado expuesto de solo lectura para los componentes. */
   readonly listaProductos = this.productos.asReadonly();
 
-  /** GET /productos/:id — lectura síncrona. Devuelve undefined si no existe. */
+  /** true mientras se espera la primera respuesta del backend. */
+  readonly cargando = signal(true);
+
+  /** Mensaje si no se pudo cargar la lista (por ejemplo, backend apagado). */
+  readonly errorCarga = signal<string | null>(null);
+
+  constructor() {
+    this.cargar();
+  }
+
+  /** GET /api/products — trae la lista completa. Se puede volver a llamar para reintentar. */
+  cargar(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(null);
+
+    this.http.get<Product[]>(`${API_URL}/products`).subscribe({
+      next: (lista) => {
+        this.productos.set(lista.map(conImagen));
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.errorCarga.set(mensajeDeError(err, 'No se pudieron cargar los productos.'));
+        this.cargando.set(false);
+      },
+    });
+  }
+
+  /** Lectura síncrona sobre la copia local. Devuelve undefined si no existe (o si todavía no cargó). */
   getProducto(id: number): Product | undefined {
     return this.productos().find((p) => p.id === id);
   }
 
-  /** POST /productos */
+  /** POST /api/products */
   crearProducto(datos: NuevoProducto): Observable<Product> {
     const errores = validarProducto(datos);
     if (errores.length > 0) {
       return throwError(() => new Error(errores.join(' ')));
     }
 
-    const lista = this.productos();
-    const nombreRepetido = lista.some(
-      (p) => p.nombre.trim().toLowerCase() === datos.nombre.trim().toLowerCase(),
-    );
-    if (nombreRepetido) {
-      return throwError(() => new Error('Ya existe un producto con ese nombre.'));
-    }
-
-    const nuevo: Product = {
+    const body = {
       ...datos,
       nombre: datos.nombre.trim(),
       descripcion: datos.descripcion.trim(),
-      imagen: datos.imagen?.trim() || IMAGEN_POR_DEFECTO,
-      id: Math.max(0, ...lista.map((p) => p.id)) + 1,
+      imagen: datos.imagen?.trim() ?? '',
     };
-    this.guardar([...lista, nuevo]);
-    return of(nuevo);
+
+    return this.http.post<Product>(`${API_URL}/products`, body).pipe(
+      map(conImagen),
+      tap((nuevo) => this.productos.update((lista) => [...lista, nuevo])),
+      catchError((err) =>
+        throwError(() => new Error(mensajeDeError(err, 'No se pudo crear el producto.'))),
+      ),
+    );
+  }
+
+  /** PATCH /api/products/:id/stock (seteo directo del stock) */
+  actualizarStock(id: number, stock: number): Observable<Product> {
+    const error = validarStock(stock);
+    if (error) {
+      return throwError(() => new Error(error));
+    }
+
+    return this.http.patch<Product>(`${API_URL}/products/${id}/stock`, { stock }).pipe(
+      map(conImagen),
+      tap((actualizado) =>
+        this.productos.update((lista) => lista.map((p) => (p.id === id ? actualizado : p))),
+      ),
+      catchError((err) =>
+        throwError(() => new Error(mensajeDeError(err, 'No se pudo actualizar el stock.'))),
+      ),
+    );
   }
 
   /**
-   * PATCH /productos/:id/stock  (se va a usar al confirmar el pedido)
    * Descuenta unidades y falla si no alcanza el stock.
+   * Por ahora usa el mismo PATCH de arriba. Cuando exista el módulo de pedidos del backend,
+   * el descuento va a hacerse allá, dentro de la misma transacción que crea el pedido.
    */
   descontarStock(id: number, cantidad: number): Observable<Product> {
-    const lista = this.productos();
-    const producto = lista.find((p) => p.id === id);
+    const producto = this.getProducto(id);
     if (!producto) {
       return throwError(() => new Error('El producto no existe.'));
     }
@@ -68,46 +129,6 @@ export class ProductService {
         () => new Error(`Stock insuficiente de "${producto.nombre}": quedan ${producto.stock}.`),
       );
     }
-    const actualizado: Product = { ...producto, stock: producto.stock - cantidad };
-    this.guardar(lista.map((p) => (p.id === id ? actualizado : p)));
-    return of(actualizado);
-  }
-
-  /** PATCH /productos/:id/stock (seteo directo) */
-  actualizarStock(id: number, stock: number): Observable<Product> {
-    const error = validarStock(stock);
-    if (error) {
-      return throwError(() => new Error(error));
-    }
-    const lista = this.productos();
-    const producto = lista.find((p) => p.id === id);
-    if (!producto) {
-      return throwError(() => new Error('El producto no existe.'));
-    }
-    const actualizado: Product = { ...producto, stock };
-    this.guardar(lista.map((p) => (p.id === id ? actualizado : p)));
-    return of(actualizado);
-  }
-
-  private guardar(lista: Product[]): void {
-    this.productos.set(lista);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-    } catch {
-      // Sin localStorage seguimos funcionando solo en memoria.
-    }
-  }
-
-  private cargar(): Product[] {
-    try {
-      const guardado = localStorage.getItem(STORAGE_KEY);
-      if (guardado) {
-        const lista = JSON.parse(guardado) as Product[];
-        if (Array.isArray(lista) && lista.length > 0) return lista;
-      }
-    } catch {
-      // Datos corruptos o sin acceso: arrancamos con los iniciales.
-    }
-    return PRODUCTOS_INICIALES;
+    return this.actualizarStock(id, producto.stock - cantidad);
   }
 }

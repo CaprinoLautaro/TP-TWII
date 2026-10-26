@@ -24,7 +24,14 @@
     }
   </div>
 
-  @if (productosFiltrados().length === 0) {
+  @if (cargando()) {
+  <p class="vacio">Cargando productos...</p>
+  } @else if (errorCarga()) {
+  <div class="vacio error-carga">
+    <p>{{ errorCarga() }}</p>
+    <button type="button" (click)="reintentar()">Reintentar</button>
+  </div>
+  } @else if (productosFiltrados().length === 0) {
   <p class="vacio">No hay productos en esta categoría.</p>
   }
 

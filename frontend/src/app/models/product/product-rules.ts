@@ -2,8 +2,8 @@ import { CATEGORIAS, NuevoProducto } from './product';
 
 /**
  * Reglas de negocio de productos, escritas como funciones puras (sin Angular).
- * Cuando exista el backend en Node se copian tal cual al servidor,
- * que es donde realmente tienen que validarse.
+ * El backend (backend/src/utils/product-rules.ts) repite estas mismas reglas:
+ * son las que realmente valen, estas sirven para avisar antes de llamar a la API.
  */
 
 export function validarProducto(datos: Partial<NuevoProducto>): string[] {
@@ -18,8 +18,8 @@ export function validarProducto(datos: Partial<NuevoProducto>): string[] {
   if (!datos.clasificacion || !CATEGORIAS.includes(datos.clasificacion)) {
     errores.push('Elegí una clasificación válida.');
   }
-  if (typeof datos.precio !== 'number' || !Number.isFinite(datos.precio) || datos.precio <= 0) {
-    errores.push('El precio debe ser mayor a 0.');
+  if (typeof datos.precio !== 'number' || !Number.isInteger(datos.precio) || datos.precio <= 0) {
+    errores.push('El precio debe ser un número entero mayor a 0.');
   }
   if (!Number.isInteger(datos.stock) || (datos.stock as number) < 0) {
     errores.push('El stock debe ser un número entero igual o mayor a 0.');

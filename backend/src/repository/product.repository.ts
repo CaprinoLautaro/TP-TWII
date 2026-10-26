@@ -1,5 +1,5 @@
 import type { PrismaClient, Product } from '../../generated/prisma/client';
-import type { ProductFilters } from '../types/product.types';
+import type { CreateProductDto, ProductFilters } from '../types/product.types';
 
 /** REPOSITORIO: único lugar que habla con la base de datos. No tiene reglas de negocio. */
 export class ProductRepository {
@@ -16,5 +16,18 @@ export class ProductRepository {
     return this.prisma.product.findUnique({ where: { id } });
   }
 
-  // TODO (opcional, admin): create(data), updateStock(id, stock)
+  /** Busca por nombre sin distinguir mayúsculas ("Collar" y "collar" son el mismo producto). */
+  findByNombre(nombre: string): Promise<Product | null> {
+    return this.prisma.product.findFirst({
+      where: { nombre: { equals: nombre, mode: 'insensitive' } },
+    });
+  }
+
+  create(data: CreateProductDto): Promise<Product> {
+    return this.prisma.product.create({ data });
+  }
+
+  updateStock(id: number, stock: number): Promise<Product> {
+    return this.prisma.product.update({ where: { id }, data: { stock } });
+  }
 }

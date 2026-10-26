@@ -52,6 +52,10 @@
         <a routerLink="/cart" class="ir-carrito">Ver carrito →</a>
       </div>
     </div>
+  } @else if (cargando()) {
+    <div class="no-existe">
+      <p>Cargando producto...</p>
+    </div>
   } @else {
     <div class="no-existe">
       <h2>😿 Este producto no existe</h2>

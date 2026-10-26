@@ -14,15 +14,14 @@
     </a>
 
 @if (estaLogueado()) {
-  <a routerLink="/order" routerLinkActive="activo" (click)="cerrarMenu()">Mi pedido</a>
-
   @if (esAdmin()) {
     <a routerLink="/productos/nuevo" routerLinkActive="activo" (click)="cerrarMenu()">Cargar producto</a>
     <a routerLink="/productos/stock" routerLinkActive="activo" (click)="cerrarMenu()">Stock</a>
-  }
 
   <a routerLink="/profile" routerLinkActive="activo" (click)="cerrarMenu()">👤 {{ usuario()?.nombre }}</a>
   <button class="btn-salir" (click)="cerrarSesion()">Cerrar sesión</button>
+  }
+
 } @else {
   <a routerLink="/signin" routerLinkActive="activo" (click)="cerrarMenu()">Ingresar</a>
   <a routerLink="/signup" class="btn-registro" (click)="cerrarMenu()">Registrarse</a>

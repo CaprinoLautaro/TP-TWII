@@ -61,3 +61,14 @@
   justify-content: space-between;
   gap: 20px;
 }
+
+.error-carga button {
+  margin-top: 8px;
+  background: #ff9f43;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.error-carga button:hover { background: #ff7a45; }

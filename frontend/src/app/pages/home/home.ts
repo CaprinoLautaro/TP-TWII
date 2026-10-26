@@ -25,6 +25,8 @@ readonly esAdmin = this.auth.esAdmin;
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   readonly productos = this.productService.listaProductos;
+  readonly cargando = this.productService.cargando;
+  readonly errorCarga = this.productService.errorCarga;
   readonly carrito = this.cartService.carrito;
 
   readonly mensaje = signal<Mensaje | null>(null);
@@ -41,6 +43,10 @@ readonly esAdmin = this.auth.esAdmin;
     const lista = this.productos();
     return categoria === 'Todas' ? lista : lista.filter((p) => p.clasificacion === categoria);
   });
+
+  reintentar(): void {
+    this.productService.cargar();
+  }
 
   seleccionarCategoria(categoria: string): void {
     this.categoriaSeleccionada.set(categoria);
