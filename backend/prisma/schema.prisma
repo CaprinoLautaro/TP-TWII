@@ -1,0 +1,81 @@
+// Modelo de datos de la tienda (PostgreSQL). Para cambiarlo:
+//   1) editar este archivo
+//   2) npm run db:migrate   (pide un nombre para la migración, ej: "agregar-telefono")
+//   3) subir a Git también la carpeta prisma/migrations
+// Cuando alguien cambie el schema, el resto hace "git pull" y "npm run db:migrate".
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  CLIENTE
+  ADMIN
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String // se guarda HASHEADA (bcrypt), nunca en texto plano
+  nombre    String
+  apellido  String
+  direccion String
+  rol       Rol      @default(CLIENTE)
+  createdAt DateTime @default(now())
+
+  cartItems CartItem[]
+  orders    Order[]
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @unique
+  descripcion   String
+  clasificacion String // Alimento | Juguetes | Accesorios | Higiene | Camas
+  precio        Int // en pesos, sin decimales
+  stock         Int      @default(0)
+  imagen        String   @default("")
+  createdAt     DateTime @default(now())
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+}
+
+model CartItem {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  productId Int
+  cantidad  Int @default(1)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+}
+
+model OrderItem {
+  id             Int @id @default(autoincrement())
+  orderId        Int
+  productId      Int
+  cantidad       Int
+  precioUnitario Int // precio al momento de comprar
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}

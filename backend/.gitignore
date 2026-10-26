@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.env
+# Cliente de Prisma: se regenera solo con "npm install" o "npm run db:generate"
+generated/
