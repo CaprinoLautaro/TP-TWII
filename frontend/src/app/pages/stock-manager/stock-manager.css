@@ -31,7 +31,7 @@
 .estado.pocas { color: #d97706; font-weight: 600; }
 .estado.agotado { color: #e53e3e; font-weight: 700; }
 
-.editar { display: flex; gap: 8px; align-items: center; }
+.editar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; }
 .editar input {
   width: 90px;
   padding: 8px 10px;
@@ -43,6 +43,15 @@
 .editar input:focus { border-color: #ff7a3d; box-shadow: 0 0 0 3px rgba(255, 122, 61, 0.15); }
 .editar button { background: #ff9f43; color: #fff; border: none; padding: 8px 14px; border-radius: 10px; cursor: pointer; }
 .editar button:hover { background: #ff7a45; }
+
+/* Eliminar: botón discreto, y rojo solo en el paso de confirmación */
+.editar .confirmar { font-size: 13px; font-weight: 600; color: #b42318; }
+.editar .btn-eliminar { background: #fff; color: #b42318; border: 1px solid #f5c2c0; }
+.editar .btn-eliminar:hover { background: #fdecec; }
+.editar .btn-peligro { background: #e53e3e; }
+.editar .btn-peligro:hover { background: #c53030; }
+.editar .btn-cancelar { background: #fff; color: #666; border: 1px solid #e2e8f0; }
+.editar .btn-cancelar:hover { background: #f3f3f3; }
 
 /* Etiqueta accesible pero no visible */
 .solo-lectores {

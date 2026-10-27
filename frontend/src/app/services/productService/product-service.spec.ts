@@ -157,6 +157,46 @@ describe('ProductService', () => {
     });
   });
 
+  describe('eliminarProducto', () => {
+    it('hace DELETE y saca el producto de la lista', () => {
+      cargarInicial([COLLAR, { ...COLLAR, id: 2, nombre: 'Correa' }]);
+      let terminado = false;
+
+      service.eliminarProducto(1).subscribe(() => (terminado = true));
+      http.expectOne({ method: 'DELETE', url: `${API_URL}/products/1` }).flush(null, {
+        status: 204,
+        statusText: 'No Content',
+      });
+
+      expect(terminado).toBe(true);
+      expect(service.listaProductos().map((p) => p.id)).toEqual([2]);
+    });
+
+    it('muestra el mensaje del backend si el producto figura en pedidos (409) y no lo saca de la lista', () => {
+      cargarInicial([COLLAR]);
+      let mensaje = '';
+
+      service.eliminarProducto(1).subscribe({ error: (e: Error) => (mensaje = e.message) });
+      http
+        .expectOne({ method: 'DELETE', url: `${API_URL}/products/1` })
+        .flush({ error: 'No se puede eliminar: este producto figura en pedidos ya realizados.' }, { status: 409, statusText: 'Conflict' });
+
+      expect(mensaje).toContain('figura en pedidos');
+      expect(service.listaProductos().length).toBe(1);
+    });
+
+    it('avisa si el backend no responde', () => {
+      cargarInicial([COLLAR]);
+      let mensaje = '';
+
+      service.eliminarProducto(1).subscribe({ error: (e: Error) => (mensaje = e.message) });
+      http.expectOne(`${API_URL}/products/1`).error(new ProgressEvent('error'));
+
+      expect(mensaje).toContain('No se pudo conectar con el servidor');
+      expect(service.listaProductos().length).toBe(1);
+    });
+  });
+
   describe('descontarStock', () => {
     it('falla sin llamar al backend si no alcanza el stock', () => {
       cargarInicial([COLLAR]);

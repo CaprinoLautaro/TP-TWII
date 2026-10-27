@@ -30,4 +30,14 @@ export class ProductRepository {
   updateStock(id: number, stock: number): Promise<Product> {
     return this.prisma.product.update({ where: { id }, data: { stock } });
   }
+
+  /** Cantidad de renglones de pedidos que incluyen este producto. */
+  countInOrders(id: number): Promise<number> {
+    return this.prisma.orderItem.count({ where: { productId: id } });
+  }
+
+  /** Borra el producto. Los items de carrito que lo tenían se borran solos (onDelete: Cascade). */
+  delete(id: number): Promise<Product> {
+    return this.prisma.product.delete({ where: { id } });
+  }
 }

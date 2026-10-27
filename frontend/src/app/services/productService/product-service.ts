@@ -111,6 +111,16 @@ export class ProductService {
     );
   }
 
+  /** DELETE /api/products/:id — falla con 409 si el producto ya figura en pedidos. */
+  eliminarProducto(id: number): Observable<void> {
+    return this.http.delete<void>(`${API_URL}/products/${id}`).pipe(
+      tap(() => this.productos.update((lista) => lista.filter((p) => p.id !== id))),
+      catchError((err) =>
+        throwError(() => new Error(mensajeDeError(err, 'No se pudo eliminar el producto.'))),
+      ),
+    );
+  }
+
   /**
    * Descuenta unidades y falla si no alcanza el stock.
    * Por ahora usa el mismo PATCH de arriba. Cuando exista el módulo de pedidos del backend,

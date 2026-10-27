@@ -39,6 +39,20 @@
             [value]="p.stock"
             (keydown.enter)="guardar(p, stockInput.value)" />
           <button type="button" (click)="guardar(p, stockInput.value)">Guardar</button>
+
+          @if (confirmandoId() === p.id) {
+            <span class="confirmar">¿Eliminar?</span>
+            <button type="button" class="btn-peligro" (click)="eliminar(p)">Sí, eliminar</button>
+            <button type="button" class="btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+          } @else {
+            <button
+              type="button"
+              class="btn-eliminar"
+              (click)="pedirConfirmacion(p.id)"
+              [attr.aria-label]="'Eliminar ' + p.nombre">
+              Eliminar
+            </button>
+          }
         </div>
       </li>
     }

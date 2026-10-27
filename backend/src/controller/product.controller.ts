@@ -24,6 +24,11 @@ export class ProductController {
     res.json(await this.service.updateStock(this.leerId(req), req.body));
   };
 
+  remove = async (req: Request, res: Response) => {
+    await this.service.delete(this.leerId(req));
+    res.status(204).send();
+  };
+
   private leerId(req: Request): number {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) throw AppError.badRequest('El id debe ser un número.');

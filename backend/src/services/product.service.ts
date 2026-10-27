@@ -33,4 +33,18 @@ export class ProductService {
     await this.getById(id); // 404 si no existe
     return this.repository.updateStock(id, stock);
   }
+
+  /**
+   * Un producto que ya se vendió no se puede borrar: los pedidos viejos lo necesitan
+   * para mostrar qué se compró. En ese caso conviene dejarlo sin stock.
+   */
+  async delete(id: number): Promise<void> {
+    await this.getById(id); // 404 si no existe
+    if ((await this.repository.countInOrders(id)) > 0) {
+      throw AppError.conflict(
+        'No se puede eliminar: este producto figura en pedidos ya realizados. Podés dejarlo sin stock.',
+      );
+    }
+    await this.repository.delete(id);
+  }
 }
