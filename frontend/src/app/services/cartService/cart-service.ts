@@ -1,116 +1,83 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { validarCantidad } from '../../models/product/product-rules';
-import { ProductService } from '../productService/product-service';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 
-/** El carrito guarda solo id y cantidad (no una copia del producto): el precio y el stock salen siempre de ProductService. */
+/** Item local del frontend (solo id y cantidad; el producto sale de ProductService). */
 export interface CartItem {
   productId: number;
   cantidad: number;
 }
 
-const STORAGE_KEY = 'patitas_carrito';
+/** Item que devuelve el backend (incluye el producto completo). */
+interface CartItemResponse {
+  id: number;
+  userId: number;
+  productId: number;
+  cantidad: number;
+  product: {
+    id: number;
+    nombre: string;
+    precio: number;
+    stock: number;
+    imagen: string;
+    clasificacion: string;
+    descripcion: string;
+  };
+}
 
-/**
- * Estado expuesto como Signal (lectura reactiva).
- * Las operaciones que simulan endpoints HTTP (agregar, quitar, cambiarCantidad)
- * se mantienen como Observables para migrar directo a HttpClient.
- *
- * Métodos pensados como futuros endpoints:
- * agregar -> POST /carrito/items, quitar -> DELETE /carrito/items/:id,
- * cambiarCantidad -> PATCH /carrito/items/:id.
- */
+/** Respuesta del backend en cada operación. */
+export interface CartResponse {
+  items: CartItemResponse[];
+  total: number;
+  cantidadTotal: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private readonly productService = inject(ProductService);
+  private readonly http = inject(HttpClient);
 
-  /** Estado interno: Signal con los items del carrito. */
-  private readonly items = signal<CartItem[]>(this.cargar());
-
-  /** Estado expuesto de solo lectura para los componentes. */
+  private readonly items = signal<CartItem[]>([]);
   readonly carrito = this.items.asReadonly();
-
-  /** Total de unidades, para el contador del navbar. */
   readonly cantidadTotal = computed(() =>
-    this.items().reduce((acc, i) => acc + i.cantidad, 0)
+    this.items().reduce((acc, i) => acc + i.cantidad, 0),
   );
 
-  /** POST /carrito/items — falla con un mensaje claro si se supera el stock. */
-  agregar(productId: number, cantidad = 1): Observable<CartItem[]> {
-    const producto = this.productService.getProducto(productId);
-    if (!producto) {
-      return throwError(() => new Error('El producto no existe.'));
-    }
-
-    const actual = this.items().find((i) => i.productId === productId)?.cantidad ?? 0;
-    const error = validarCantidad(producto.stock, actual, cantidad);
-    if (error) {
-      return throwError(() => new Error(error));
-    }
-
-    const items = actual
-      ? this.items().map((i) =>
-          i.productId === productId ? { ...i, cantidad: i.cantidad + cantidad } : i,
-        )
-      : [...this.items(), { productId, cantidad }];
-
-    this.guardar(items);
-    return of(items);
+  constructor() {
+    // Carga el carrito al iniciar la app (por si el usuario recarga).
+    this.cargar();
   }
 
-  /** PATCH /carrito/items/:id — setea la cantidad exacta. Si es 0 o menos, elimina el item. */
-  cambiarCantidad(productId: number, cantidad: number): Observable<CartItem[]> {
-    if (cantidad <= 0) {
-      return this.quitar(productId);
-    }
-
-    const producto = this.productService.getProducto(productId);
-    if (!producto) {
-      return throwError(() => new Error('El producto no existe.'));
-    }
-
-    const error = validarCantidad(producto.stock, 0, cantidad);
-    if (error) {
-      return throwError(() => new Error(error));
-    }
-
-    const items = this.items().map((i) =>
-      i.productId === productId ? { ...i, cantidad } : i,
-    );
-    this.guardar(items);
-    return of(items);
+  /** GET /api/cart */
+  cargar(): void {
+    this.http.get<CartResponse>('/api/cart').subscribe({
+      next: (r) => this.items.set(this.mapItems(r)),
+      error: () => this.items.set([]),
+    });
   }
 
-  /** DELETE /carrito/items/:id */
-  quitar(productId: number): Observable<CartItem[]> {
-    const existe = this.items().some((i) => i.productId === productId);
-    if (!existe) {
-      return throwError(() => new Error('El producto no está en el carrito.'));
-    }
-    const items = this.items().filter((i) => i.productId !== productId);
-    this.guardar(items);
-    return of(items);
+  /** POST /api/cart/items */
+  agregar(productId: number, cantidad = 1): Observable<CartResponse> {
+    return this.http
+      .post<CartResponse>('/api/cart/items', { productId, cantidad })
+      .pipe(tap((r) => this.items.set(this.mapItems(r))));
   }
 
-  private guardar(items: CartItem[]): void {
-    this.items.set(items);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch {
-      // Sin localStorage seguimos solo en memoria.
-    }
+  /** PATCH /api/cart/items/:productId */
+  cambiarCantidad(productId: number, cantidad: number): Observable<CartResponse> {
+    return this.http
+      .patch<CartResponse>(`/api/cart/items/${productId}`, { cantidad })
+      .pipe(tap((r) => this.items.set(this.mapItems(r))));
   }
 
-  private cargar(): CartItem[] {
-    try {
-      const guardado = localStorage.getItem(STORAGE_KEY);
-      if (guardado) {
-        const items = JSON.parse(guardado) as CartItem[];
-        if (Array.isArray(items)) return items;
-      }
-    } catch {
-      // Datos corruptos: carrito vacío.
-    }
-    return [];
+  /** DELETE /api/cart/items/:productId */
+  quitar(productId: number): Observable<CartResponse> {
+    return this.http
+      .delete<CartResponse>(`/api/cart/items/${productId}`)
+      .pipe(tap((r) => this.items.set(this.mapItems(r))));
+  }
+
+  /** El backend devuelve items con producto; el frontend solo guarda id y cantidad. */
+  private mapItems(r: CartResponse): CartItem[] {
+    return r.items.map((i) => ({ productId: i.productId, cantidad: i.cantidad }));
   }
 }

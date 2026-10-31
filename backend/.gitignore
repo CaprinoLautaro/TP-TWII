@@ -1,5 +1,6 @@
 node_modules/
 dist/
 .env
+docker-compose.yml
 # Cliente de Prisma: se regenera solo con "npm install" o "npm run db:generate"
 generated/

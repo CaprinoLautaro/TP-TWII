@@ -9,24 +9,81 @@ export class CartService {
     private readonly productService: ProductService,
   ) {}
 
-  async getCart(_userId: number) {
-    // TODO: devolver los items con su producto y el total (precio * cantidad).
-    throw AppError.notImplemented('getCart');
+  /** Devuelve el carrito completo: items con producto, total en pesos y cantidad total. */
+  async getCart(userId: number) {
+    const items = await this.repository.findByUser(userId);
+    const total = items.reduce(
+      (acc, item) => acc + item.product.precio * item.cantidad,
+      0,
+    );
+    const cantidadTotal = items.reduce((acc, item) => acc + item.cantidad, 0);
+    return { items, total, cantidadTotal };
   }
 
-  async addItem(_userId: number, _dto: AddItemDto) {
-    // TODO: validar cantidad >= 1, que el producto exista (productService.getById)
-    //       y que (lo que ya hay en el carrito + cantidad) no supere el stock. Si ya existe, suma.
-    throw AppError.notImplemented('addItem');
+  /** POST /cart/items — agrega o incrementa. Valida stock antes de persistir. */
+  async addItem(userId: number, dto: AddItemDto) {
+    const cantidad = Number(dto.cantidad);
+    if (!Number.isInteger(cantidad) || cantidad < 1) {
+      throw AppError.badRequest('La cantidad debe ser al menos 1.');
+    }
+
+    const producto = await this.productService.getById(dto.productId);
+    if (!producto) {
+      throw AppError.notFound('El producto no existe.');
+    }
+
+    const itemExistente = await this.repository.findItem(userId, dto.productId);
+    const cantidadActual = itemExistente?.cantidad ?? 0;
+    const nuevaCantidad = cantidadActual + cantidad;
+
+    if (nuevaCantidad > producto.stock) {
+      throw AppError.badRequest(
+        `Stock insuficiente de "${producto.nombre}": quedan ${producto.stock}.`,
+      );
+    }
+
+    await this.repository.saveItem(userId, dto.productId, nuevaCantidad);
+    return this.getCart(userId);
   }
 
-  async updateItem(_userId: number, _productId: number, _dto: UpdateItemDto) {
-    // TODO: setear la cantidad exacta (validando stock). Si es 0 o menos, quitar el item.
-    throw AppError.notImplemented('updateItem');
+  /** PATCH /cart/items/:productId — setea cantidad exacta. Si es 0 o menos, elimina. */
+  async updateItem(userId: number, productId: number, dto: UpdateItemDto) {
+    const cantidad = Number(dto.cantidad);
+    if (!Number.isInteger(cantidad)) {
+      throw AppError.badRequest('La cantidad debe ser un número entero.');
+    }
+
+    if (cantidad <= 0) {
+      return this.removeItem(userId, productId);
+    }
+
+    const producto = await this.productService.getById(productId);
+    if (!producto) {
+      throw AppError.notFound('El producto no existe.');
+    }
+
+    if (cantidad > producto.stock) {
+      throw AppError.badRequest(
+        `Stock insuficiente de "${producto.nombre}": quedan ${producto.stock}.`,
+      );
+    }
+
+    const item = await this.repository.findItem(userId, productId);
+    if (!item) {
+      throw AppError.notFound('El producto no está en el carrito.');
+    }
+
+    await this.repository.saveItem(userId, productId, cantidad);
+    return this.getCart(userId);
   }
 
-  async removeItem(_userId: number, _productId: number) {
-    // TODO: quitar el producto del carrito (404 si no estaba).
-    throw AppError.notImplemented('removeItem');
+  /** DELETE /cart/items/:productId — 404 si no estaba en el carrito. */
+  async removeItem(userId: number, productId: number) {
+    const item = await this.repository.findItem(userId, productId);
+    if (!item) {
+      throw AppError.notFound('El producto no está en el carrito.');
+    }
+    await this.repository.removeItem(userId, productId);
+    return this.getCart(userId);
   }
 }
