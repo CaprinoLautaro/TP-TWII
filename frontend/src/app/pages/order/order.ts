@@ -1,213 +1,149 @@
-import { Component, OnInit, OnDestroy, inject, Signal, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { Component, inject, signal } from '@angular/core'; 
+import { CurrencyPipe, DatePipe, UpperCasePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
-import { CartService } from '../../services/cartService/cart-service';
-import { ProductService } from '../../services/productService/product-service';
-import { AuthService } from '../../services/authService/auth-service';
-import { Product } from '../../models/product/product';
-import { Usuario } from '../../models/user/user';
-import creditCardType from 'credit-card-type';
-
-
-export interface OrderItemDetail {
-  producto: Product;
-  cantidad: number;
-  subtotal: number;
-}
-
-export interface OrderConfirmation {
-  orderId: string;
-  fecha: Date;
-  usuario: Omit<Usuario, 'password'>;
-  items: OrderItemDetail[];
-  total: number;
-  ultimosDigitosTarjeta: string;
-}
+import { ReactiveFormsModule, FormBuilder, Validators, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
+import { OrderService } from '../../services/orderService/order-service';
 
 @Component({
+  standalone: true,
+  imports: [CurrencyPipe, DatePipe, UpperCasePipe, RouterModule, ReactiveFormsModule],
   selector: 'app-order',
-  imports: [CurrencyPipe, DatePipe, RouterModule, ReactiveFormsModule],
-  templateUrl: './order.html',
   styleUrl: './order.css',
+  templateUrl: './order.html',
 })
-export class Order implements OnInit, OnDestroy {
+export class Order { 
+  private readonly orderService = inject(OrderService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
-  private readonly cartService = inject(CartService);
-  private readonly productService = inject(ProductService);
-  private readonly authService = inject(AuthService);
-  private readonly destroy$ = new Subject<void>();
+
+  public readonly errorMensaje = signal<string | null>(null);
+
+  readonly itemsDetalle = this.orderService.itemsDetalle;
+  readonly total = this.orderService.total;
+  readonly totalUnidades = this.orderService.totalUnidades;
+  readonly pedidoConfirmado = this.orderService.pedidoConfirmado;
+  readonly usuarioActual = signal(this.orderService.getUsuarioActual());
 
   public fechaActual: Date = new Date();
   public cargando = signal<boolean>(false);
-  public errorPago: string | null = null;
-  public pedidoConfirmado = signal<OrderConfirmation | null>(null);
-  public tipoTarjeta = signal<string | null>(null);
-  public logoOk = signal(true);
+  public metodoPagoSeleccionado = signal<string>('Efectivo contra entrega');
 
-  /** Logo de la marca detectada (CDN icons8) con fallback genérico. */
+  // Estado de la tarjeta
+  public tipoTarjeta = signal<string | null>(null);
+  public logoOk = signal<boolean>(true);
+
+  // Logos según la marca
   private readonly logoGenerico = 'https://img.icons8.com/color/96/bank-card-front.png';
   private readonly logoPorTipo: Record<string, string> = {
     'visa': 'https://img.icons8.com/color/96/visa.png',
     'mastercard': 'https://img.icons8.com/color/96/mastercard.png',
     'american-express': 'https://img.icons8.com/color/96/amex.png',
     'maestro': 'https://img.icons8.com/color/96/maestro.png',
-    'diners-club': 'https://img.icons8.com/color/96/diners-club.png',
     'discover': 'https://img.icons8.com/color/96/discover.png',
-    'jcb': 'https://img.icons8.com/color/96/jcb.png',
-    'unionpay': 'https://img.icons8.com/color/96/unionpay.png',
-    'cabal': 'https://img.icons8.com/color/96/bank-card-back.png',
-    'naranja': 'https://img.icons8.com/color/96/bank-card-back.png',
-    'hipercard': 'https://img.icons8.com/color/96/bank-card-back.png',
-    'elo': 'https://img.icons8.com/color/96/bank-card-back.png',
-    'shopping': 'https://img.icons8.com/color/96/bank-card-back.png',
-    'argencard': 'https://img.icons8.com/color/96/bank-card-back.png',
   };
 
-  private claveTarjeta(): string {
-    return (this.tipoTarjeta() ?? '').toLowerCase().replace(/\s/g, '-');
+  public readonly pagoForm = this.fb.group({
+    numeroTarjeta: ['', [Validators.required, this.numeroTarjetaValidator()]],
+    nombreTitular: ['', [Validators.required, Validators.minLength(3)]],
+    vencimiento: ['', [Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])\/?([0-9]{2})$/)]],
+    cvv: ['', [Validators.required, this.cvvValidator()]],
+    dniTitular: ['', [Validators.required, Validators.pattern(/^\d{7,8}$/)]],
+  });
+
+  seleccionarMetodoPago(metodo: string): void {
+    this.metodoPagoSeleccionado.set(metodo);
+    this.errorMensaje.set(null);
   }
+
+  volverAlCatalogo(): void {
+    this.orderService.limpiarPedido();
+    this.router.navigate(['/']);
+  }
+
+// Tarjeta 
 
   public get logoTarjeta(): string | null {
     const tipo = this.tipoTarjeta();
     if (!tipo) return null;
     if (!this.logoOk()) return this.logoGenerico;
-    return this.logoPorTipo[this.claveTarjeta()] ?? this.logoGenerico;
+    return this.logoPorTipo[tipo] ?? this.logoGenerico;
   }
 
   public logoBroken(): void {
     this.logoOk.set(false);
   }
 
+  onTarjetaInput(valor: string): void {
+    const limpio = (valor ?? '').replace(/\D/g, '');
 
-
-  public itemsDetalle: OrderItemDetail[] = [];
-  public pagoForm!: FormGroup;
-
-  ngOnInit(): void {
-    this.initForm();
-    this.cargarItemsCarrito();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-  private initForm(): void {
-    this.pagoForm = this.fb.group({
-      numeroTarjeta: ['', [Validators.required, this.numeroTarjetaValidator()]],
-      nombreTitular: ['', [Validators.required, Validators.minLength(3)]],
-      vencimiento: ['', [Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])\/?([0-9]{2})$/)]],
-      cvv: ['', [Validators.required, this.cvvValidator()]],
-      dniTitular: ['', [Validators.required, Validators.pattern(/^\d{7,8}$/)]],
-    });
-  }
-
-  /** Largo según la marca detectada: Amex 15 dígitos, resto 16. */
-  private numeroTarjetaValidator(): ValidatorFn {
-    return (ctrl: AbstractControl): ValidationErrors | null => {
-      const limpio = (ctrl.value ?? '').toString().replace(/\D/g, '');
-      if (!limpio) return null; // el required cubre el vacío
-      const largo = this.claveTarjeta() === 'american-express' ? 15 : 16;
-      return new RegExp(`^\\d{${largo}}$`).test(limpio) ? null : { tarjetaInvalida: true };
-    };
-  }
-
-  /** CVV según la marca detectada: Amex 4 dígitos, resto 3. */
-  private cvvValidator(): ValidatorFn {
-    return (ctrl: AbstractControl): ValidationErrors | null => {
-      const valor = (ctrl.value ?? '').toString();
-      if (!valor) return null; // el required cubre el vacío
-      const largo = this.claveTarjeta() === 'american-express' ? 4 : 3;
-      return new RegExp(`^\\d{${largo}}$`).test(valor) ? null : { cvvInvalido: true };
-    };
-  }
-
-  private cargarItemsCarrito(): void {
-    const carritoItems = this.cartService.carrito();
-    this.itemsDetalle = carritoItems
-      .map((item) => {
-        const prod = this.productService.getProducto(item.productId);
-        if (!prod) return null;
-        return {
-          producto: prod,
-          cantidad: item.cantidad,
-          subtotal: prod.precio * item.cantidad,
-        };
-      })
-      .filter((i): i is OrderItemDetail => i !== null);
-  }
-
-  get total(): number {
-    return this.itemsDetalle.reduce((acc, item) => acc + item.subtotal, 0);
-  }
-
-  get totalUnidades(): number {
-    return this.itemsDetalle.reduce((acc, item) => acc + item.cantidad, 0);
-  }
-
-  get usuarioActual() {
-    const user = this.authService.usuarioActual();
-    return user || {
-      nombre: 'Invitado',
-      apellido: 'Patitas',
-      email: 'invitado@patitas.com',
-      direccion: 'Sin dirección registrada',
-    };
-  }
-
- procesarPago(): void {
-  if (this.itemsDetalle.length === 0) {
-    alert('No podés confirmar un pedido sin productos.');
-    return;
-  }
-
-  if (this.pagoForm.invalid) {
-    this.pagoForm.markAllAsTouched();
-    return;
-  }
-
-  this.cargando.set(true);
-  this.errorPago = null;
-
-  setTimeout(() => {
-    this.cargando.set(false);
-    const numTarjeta = (this.pagoForm.get('numeroTarjeta')?.value || '').replace(/\D/g, '');
-    const ultimosDigitos = `${this.tipoTarjeta() ?? 'Tarjeta'} ****${numTarjeta.slice(-4)}`;
-
-    this.pedidoConfirmado.set({
-      orderId: 'PED-' + Math.floor(100000 + Math.random() * 900000),
-      fecha: new Date(),
-      usuario: { ...this.usuarioActual },
-      items: [...this.itemsDetalle],
-      total: this.total,
-      ultimosDigitosTarjeta: ultimosDigitos,
-    });
-  }, 2000);
-}
-
-  volverAlCatalogo(): void {
-    this.router.navigate(['']);
-  }
-
-  onTarjetaInput(v: string): void {
-    const limpio = (v ?? '').replace(/\D/g, '');
     if (!limpio) {
       this.tipoTarjeta.set(null);
       return;
     }
-    const matches = creditCardType(limpio);
-    if (matches.length > 0) {
-      // sticky: si matchean varias (ej "4"), creditCardType ya ordena por prioridad
-      this.tipoTarjeta.set(matches[0].niceType);
-      this.logoOk.set(true);
+
+    if (/^4/.test(limpio)) {
+      this.tipoTarjeta.set('visa');
+    } else if (/^(5[1-5]|2[2-7])/.test(limpio)) {
+      this.tipoTarjeta.set('mastercard');
+    } else if (/^3[47]/.test(limpio)) {
+      this.tipoTarjeta.set('american-express');
+    } else if (/^(6011|65|64[4-9])/.test(limpio)) {
+      this.tipoTarjeta.set('discover');
+    } else {
+      this.tipoTarjeta.set('tarjeta');
     }
-    // si matches es vacio (prefijo trampa ej "306") conservamos el ultimo tipo
+
+    this.logoOk.set(true);
     this.pagoForm.get('numeroTarjeta')?.updateValueAndValidity();
     this.pagoForm.get('cvv')?.updateValueAndValidity();
   }
+
+  private numeroTarjetaValidator(): ValidatorFn {
+    return (ctrl: AbstractControl): ValidationErrors | null => {
+      const limpio = (ctrl.value ?? '').toString().replace(/\D/g, '');
+      if (!limpio) return null;
+      const largo = this.tipoTarjeta() === 'american-express' ? 15 : 16;
+      return new RegExp(`^\\d{${largo}}$`).test(limpio) ? null : { tarjetaInvalida: true };
+    };
+  }
+
+  private cvvValidator(): ValidatorFn {
+    return (ctrl: AbstractControl): ValidationErrors | null => {
+      const valor = (ctrl.value ?? '').toString();
+      if (!valor) return null;
+      const largo = this.tipoTarjeta() === 'american-express' ? 4 : 3;
+      return new RegExp(`^\\d{${largo}}$`).test(valor) ? null : { cvvInvalido: true };
+    };
+  }
+
   
+  confirmarPedido(): void {
+    this.errorMensaje.set(null);
+    let infoTarjeta: string | undefined = undefined;
+
+    if (this.metodoPagoSeleccionado() === 'Tarjeta / Débito') {
+      if (this.pagoForm.invalid) {
+        this.pagoForm.markAllAsTouched();
+        this.errorMensaje.set('Por favor completa todos los datos de la tarjeta correctamente.');
+        return;
+      }
+
+      const numTarjeta = (this.pagoForm.get('numeroTarjeta')?.value || '').replace(/\D/g, '');
+      const nombreMarca = (this.tipoTarjeta() ?? 'Tarjeta').toUpperCase();
+      infoTarjeta = `${nombreMarca} ****${numTarjeta.slice(-4)}`;
+    }
+
+    this.cargando.set(true);
+
+    this.orderService.confirmarPedido(this.metodoPagoSeleccionado(), infoTarjeta).subscribe({
+      next: () => {
+        this.cargando.set(false);
+      },
+      error: (err: any) => {
+        this.cargando.set(false);
+        const mensaje = err.error?.error || err.error?.message || err.message || 'Ocurrió un error al procesar el pedido';
+        this.errorMensaje.set(mensaje);
+      }
+    });
+  }
 }

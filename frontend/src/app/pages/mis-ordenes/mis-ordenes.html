@@ -1,0 +1,83 @@
+<div class="orders-page">
+  <div class="orders-header-bar">
+    <div>
+      <h2>📦 Mis Pedidos</h2>
+      <p class="subtitle">Historial de compras realizadas en tu cuenta</p>
+    </div>
+    <a routerLink="/" class="btn-volver">← Volver a la Tienda</a>
+  </div>
+
+  <!-- Estado de Carga -->
+  @if (cargando()) {
+    <div class="state-box">
+      <div class="spinner"></div>
+      <p>Cargando tus pedidos...</p>
+    </div>
+  }
+
+  <!-- Estado de Error -->
+  @else if (error()) {
+    <div class="alert-error">
+      <p>⚠️ {{ error() }}</p>
+      <button (click)="cargarPedidos()" class="btn-reintentar">Reintentar</button>
+    </div>
+  }
+
+  <!-- Si todavia no tenes compras -->
+  @else if (pedidos().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">🐾</div>
+      <h3>Todavía no realizaste ningún pedido</h3>
+      <p>Explora nuestro catálogo y llena tu carrito con lo mejor para tu mascota.</p>
+      <a routerLink="/" class="btn-primary">Ver Productos</a>
+    </div>
+  }
+
+  <!-- Listado de Pedidos -->
+  @else {
+    <div class="orders-grid">
+      @for (pedido of pedidos(); track pedido.id) {
+        <div class="order-card">
+          <!-- Header Tarjeta Pedido -->
+          <div class="card-top">
+            <div class="order-info">
+              <span class="order-code">Pedido #PED-{{ pedido.id }}</span>
+              <span class="order-date">
+                📅 {{ pedido.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+            <div class="order-total-badge">
+              <span>Total abonado:</span>
+              <strong>{{ pedido.total | currency: 'ARS':'symbol':'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <hr class="card-divider" />
+
+          <!-- Articulos Comprados Detalle-->
+          <div class="card-body">
+            <h4>Artículos incluidos ({{ pedido.items?.length || 0 }}):</h4>
+            <div class="items-list">
+              @for (item of pedido.items; track item.id) {
+                <div class="item-row">
+                  <div class="item-info">
+                    <span class="item-name">{{ item.product?.nombre || 'Producto' }}</span>
+                    <span class="item-qty">Cantidad: x{{ item.cantidad }}</span>
+                  </div>
+                  <div class="item-pricing">
+                    <span class="unit-price">
+                      Unit: {{ item.precioUnitario | currency: 'ARS':'symbol':'1.2-2' }}
+                    </span>
+                    <span class="item-subtotal">
+                      {{ (item.precioUnitario * item.cantidad) | currency: 'ARS':'symbol':'1.2-2' }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

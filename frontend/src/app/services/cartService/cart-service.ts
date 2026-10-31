@@ -80,4 +80,16 @@ export class CartService {
   private mapItems(r: CartResponse): CartItem[] {
     return r.items.map((i) => ({ productId: i.productId, cantidad: i.cantidad }));
   }
+
+vaciar(): void {
+  this.items.set([]);
+
+  this.http.delete<CartResponse>('/api/cart').subscribe({
+    next: () => {},
+    error: () => {
+      this.items.set([]);
+    }
+  });
 }
+}
+

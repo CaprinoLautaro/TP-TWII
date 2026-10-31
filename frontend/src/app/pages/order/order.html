@@ -1,5 +1,5 @@
 <div class="order-page">
-  <!-- Si todavia no se confirmo el pedido -->
+  <!-- Si todavía NO se confirmó el pedido -->
   @if (!pedidoConfirmado()) {
     <div class="order-box">
       <div class="order-header">
@@ -9,10 +9,10 @@
         </span>
       </div>
 
-      <!-- Si esta vacio -->
-      @if (itemsDetalle.length === 0) {
+      <!-- Si está vacío -->
+      @if (itemsDetalle().length === 0) {
         <div class="empty-cart-msg">
-          <p>No tenes productos seleccionados para generar un pedido.</p>
+          <p>No tenés productos seleccionados para generar un pedido.</p>
           <button class="btn-primary" (click)="volverAlCatalogo()">Ir a la Tienda de Mascotas</button>
         </div>
       } @else {
@@ -20,9 +20,9 @@
         <div class="order-grid">
           <!-- Listado de Productos -->
           <div class="order-items-col">
-            <h3>Articulos del Pedido ({{ totalUnidades }})</h3>
+            <h3>Artículos del Pedido ({{ totalUnidades() }})</h3>
 
-            @for (item of itemsDetalle; track item.producto.id) {
+            @for (item of itemsDetalle(); track item.producto.id) {
               <div class="item-card">
                 <img 
                   [src]="item.producto?.imagen || 'https://placehold.co/80x80?text=Mascota'" 
@@ -47,99 +47,152 @@
             }
           </div>
 
-          <!-- Datos de Entrega y Total -->
+          <!-- Datos de Entrega y Resumen de Pago -->
           <div class="order-summary-col">
             <div class="card-summary">
-              <h3>📦 Datos de Envio</h3>
-              <p><strong>Destinatario:</strong> {{ usuarioActual.nombre }} {{ usuarioActual.apellido }}</p>
-              <p><strong>Email:</strong> {{ usuarioActual.email }}</p>
-              <p><strong>Dirección:</strong> {{ usuarioActual.direccion }}</p>
+              <h3>📦 Datos de Envío</h3>
+              <p><strong>Destinatario:</strong> {{ usuarioActual().nombre }} {{ usuarioActual().apellido }}</p>
+              <p><strong>Email:</strong> {{ usuarioActual().email }}</p>
+              <p><strong>Dirección:</strong> {{ usuarioActual().direccion }}</p>
 
               <hr class="divider" />
 
+              <h3>💳 Forma de Pago</h3>
+              <div class="payment-options">
+                <label class="payment-option" [class.selected]="metodoPagoSeleccionado() === 'Efectivo contra entrega'">
+                  <input 
+                    type="radio" 
+                    name="metodoPago" 
+                    [checked]="metodoPagoSeleccionado() === 'Efectivo contra entrega'"
+                    (change)="seleccionarMetodoPago('Efectivo contra entrega')"
+                  />
+                  <span>💵 Efectivo</span>
+                </label>
+
+                <label class="payment-option" [class.selected]="metodoPagoSeleccionado() === 'Transferencia bancaria'">
+                  <input 
+                    type="radio" 
+                    name="metodoPago" 
+                    [checked]="metodoPagoSeleccionado() === 'Transferencia bancaria'"
+                    (change)="seleccionarMetodoPago('Transferencia bancaria')"
+                  />
+                  <span>📱 Transferencia bancaria (Alias)</span>
+                </label>
+
+                <label class="payment-option" [class.selected]="metodoPagoSeleccionado() === 'Tarjeta / Débito'">
+                  <input 
+                    type="radio" 
+                    name="metodoPago" 
+                    [checked]="metodoPagoSeleccionado() === 'Tarjeta / Débito'"
+                    (change)="seleccionarMetodoPago('Tarjeta / Débito')"
+                  />
+                  <span>💳 Tarjeta Débito / Crédito</span>
+                </label>
+              </div>
+
+
+              @if (metodoPagoSeleccionado() === 'Tarjeta / Débito') {
+                <div class="card-payment-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
+                  <h4>Datos de la Tarjeta</h4>
+                  <form [formGroup]="pagoForm">
+                    <!-- Número de Tarjeta con detección de logo -->
+                    <div class="form-group">
+                      <label>Número de Tarjeta</label>
+                      <div class="num-wrapper" style="position: relative; display: flex; align-items: center;">
+                        <input 
+                          type="text" 
+                          formControlName="numeroTarjeta"
+                          autocomplete="cc-number" 
+                          inputmode="numeric"
+                          (input)="onTarjetaInput($any($event.target).value)"
+                          placeholder="Número de tarjeta" 
+                          style="width: 100%; padding-right: 40px;"
+                        />
+                        @if (logoTarjeta) {
+                          <img [src]="logoTarjeta" [alt]="tipoTarjeta() ?? 'tarjeta'" class="card-brand"
+                               style="position: absolute; right: 8px; height: 22px;"
+                               (error)="logoBroken()" />
+                        }
+                      </div>
+                      @if (tipoTarjeta()) {
+                        <small style="color: #555; font-size: 0.8rem;">Marca detectada: <strong>{{ tipoTarjeta() | uppercase }}</strong></small>
+                      }
+                      @if (pagoForm.get('numeroTarjeta')?.touched && pagoForm.get('numeroTarjeta')?.invalid) {
+                        <small style="color: #b91c1c; display: block;">Número inválido para la marca detectada.</small>
+                      }
+                    </div>
+
+                    <!-- Nombre del titular -->
+                    <div class="form-group" style="margin-top: 10px;">
+                      <label>Nombre del Titular</label>
+                      <input type="text" formControlName="nombreTitular" autocomplete="cc-name" placeholder="Como figura en el plástico" style="width: 100%;" />
+                      @if (pagoForm.get('nombreTitular')?.touched && pagoForm.get('nombreTitular')?.invalid) {
+                        <small style="color: #b91c1c; display: block;">Ingrese un nombre válido (mínimo 3 letras).</small>
+                      }
+                    </div>
+
+                    <!-- Vencimiento y CVV -->
+                    <div class="form-row" style="display: flex; gap: 10px; margin-top: 10px;">
+                      <div class="form-group" style="flex: 1;">
+                        <label>Vencimiento (MM/AA)</label>
+                        <input type="text" formControlName="vencimiento" placeholder="MM/AA" maxlength="5" style="width: 100%;" />
+                        @if (pagoForm.get('vencimiento')?.touched && pagoForm.get('vencimiento')?.invalid) {
+                          <small style="color: #b91c1c; display: block;">Formato inválido (MM/AA).</small>
+                        }
+                      </div>
+                      <div class="form-group" style="flex: 1;">
+                        <label>CVV</label>
+                        <input type="password" formControlName="cvv" placeholder="123" maxlength="4" style="width: 100%;" />
+                        @if (pagoForm.get('cvv')?.touched && pagoForm.get('cvv')?.invalid) {
+                          <small style="color: #b91c1c; display: block;">CVV inválido.</small>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- DNI -->
+                    <div class="form-group" style="margin-top: 10px;">
+                      <label>DNI del Titular</label>
+                      <input type="text" formControlName="dniTitular" placeholder="7 u 8 dígitos sin puntos" maxlength="8" style="width: 100%;" />
+                      @if (pagoForm.get('dniTitular')?.touched && pagoForm.get('dniTitular')?.invalid) {
+                        <small style="color: #b91c1c; display: block;">Ingrese un DNI válido de 7 u 8 dígitos.</small>
+                      }
+                    </div>
+                  </form>
+                </div>
+              }
+
+              <hr class="divider" />
+
+              <!-- Cobro -->
               <h3>Detalle de Cobro</h3>
               <div class="summary-line">
                 <span>Subtotal productos:</span>
-                <span>{{ total | currency: 'ARS':'symbol':'1.2-2' }}</span>
+                <span>{{ total() | currency: 'ARS':'symbol':'1.2-2' }}</span>
               </div>
               <div class="summary-line">
-                <span>Costo de envio:</span>
+                <span>Costo de envío:</span>
                 <span class="envio-gratis">Gratis 🐾</span>
               </div>
               <div class="summary-line total-line">
                 <span>Total a Pagar:</span>
-                <span>{{ total | currency: 'ARS':'symbol':'1.2-2' }}</span>
+                <span>{{ total() | currency: 'ARS':'symbol':'1.2-2' }}</span>
               </div>
 
-              <!-- Datos tarjeta -->
-              <div class="card-payment-section">
-                <h3>Datos de Tarjeta</h3>
-                <form [formGroup]="pagoForm">
-                  <div class="form-group">
-                    <label>Número de Tarjeta</label>
-                    <div class="num-wrapper">
-                      <input type="text" formControlName="numeroTarjeta"
-                             autocomplete="cc-number" inputmode="numeric"
-                             (input)="onTarjetaInput($any($event.target).value)"
-                             placeholder="Número de tarjeta" />
-                      @if (logoTarjeta) {
-                        <img [src]="logoTarjeta" [alt]="tipoTarjeta() ?? 'tarjeta'" class="card-brand"
-                             (error)="logoBroken()" />
-                      }
-                    </div>
-                    @if (tipoTarjeta()) {
-                      <small class="brand-hint">{{ tipoTarjeta() }}</small>
-                    }
-                    @if (pagoForm.get('numeroTarjeta')?.touched && pagoForm.get('numeroTarjeta')?.invalid) {
-                      <small class="error-msg">Número de tarjeta inválido para la marca detectada.</small>
-                    }
-                  </div>
+              <!-- Mensajes de Error (Stock o formulario incompleto) -->
+              @if (errorMensaje()) {
+                <div class="alert-error" style="color: #b91c1c; background-color: #fef2f2; border: 1px solid #f87171; padding: 10px 14px; border-radius: 8px; margin: 12px 0; font-size: 0.9rem;">
+                  ⚠️ {{ errorMensaje() }}
+                </div>
+              }
 
-                  <div class="form-group">
-                    <label>Nombre del Titular</label>
-                    <input type="text" formControlName="nombreTitular" autocomplete="cc-name" placeholder="Como figura en la tarjeta" />
-                    @if (pagoForm.get('nombreTitular')?.touched && pagoForm.get('nombreTitular')?.invalid) {
-                      <small class="error-msg">Ingrese un nombre válido.</small>
-                    }
-                  </div>
-
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>Vencimiento (MM/AA)</label>
-                      <input type="text" formControlName="vencimiento" placeholder="MM/AA" maxlength="5" />
-                      @if (pagoForm.get('vencimiento')?.touched && pagoForm.get('vencimiento')?.invalid) {
-                        <small class="error-msg">Ingrese una fecha de vencimiento válida.</small>
-                      }
-                    </div>
-                    <div class="form-group">
-                      <label>CVV</label>
-                      <input type="password" formControlName="cvv" placeholder="123" maxlength="4" />
-                      @if (pagoForm.get('cvv')?.touched && pagoForm.get('cvv')?.invalid) {
-                        <small class="error-msg">Ingrese un CVV válido.</small>
-                      }
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label>DNI del Titular</label>
-                    <input type="text" formControlName="dniTitular" placeholder="Sin puntos" maxlength="8" />
-                    @if (pagoForm.get('dniTitular')?.touched && pagoForm.get('dniTitular')?.invalid) {
-                      <small class="error-msg">Ingrese un DNI válido.</small>
-                    }
-                  </div>
-
-                </form>
-              </div>
-
-              <!-- Botón de pago con estado de carga -->
-              <button class="btn-confirm" [disabled]="cargando() || pagoForm.invalid" (click)="procesarPago()">
-                @if (cargando()) {
-                  <span>🔄 Procesando Pago...</span>
-                } @else {
-                  <span>Pagar {{ total | currency: 'ARS':'symbol':'1.2-2' }}</span>
-                }
+              <button 
+                class="btn-confirm" 
+                (click)="confirmarPedido()" 
+                [disabled]="cargando() || (metodoPagoSeleccionado() === 'Tarjeta / Débito' && pagoForm.invalid)"
+              >
+                {{ cargando() ? 'Procesando pedido...' : 'Confirmar Pedido' }}
               </button>
-              
+
               <button class="btn-secondary" (click)="volverAlCatalogo()">
                 Seguir Comprando
               </button>
@@ -149,31 +202,37 @@
       }
     </div>
   } @else {
-    <!-- Comprobante Final  -->
-    <div class="confirmed-card">
-      <div class="success-badge">🐶 ¡Pedido Realizado con Exito!</div>
-      <h2>Muchas gracias por tu compra</h2>
-      <p class="order-number">Código de Pedido: <strong>{{ pedidoConfirmado()?.orderId }}</strong></p>
-      <p class="order-date">Fecha: {{ pedidoConfirmado()?.fecha | date: 'dd/MM/yyyy HH:mm' }}</p>
+    <!-- Comprobante Final de Compra -->
+    @if (pedidoConfirmado(); as pedido) {
+      <div class="confirmed-card">
+        <div class="success-badge">🐶 ¡Pedido Realizado con Éxito!</div>
+        <h2>Muchas gracias por tu compra</h2>
+        <p class="order-number">Código de Pedido: <strong>{{ pedido.orderId }}</strong></p>
+        <p class="order-date">Fecha: {{ pedido.fecha | date: 'dd/MM/yyyy HH:mm' }}</p>
 
-      <div class="confirmation-info">
-        <p>Se enviara el comprobante a <strong>{{ pedidoConfirmado()?.usuario.email }}</strong>.</p>
-        <p>Dirección de destino: <strong>{{ pedidoConfirmado()?.usuario.direccion }}</strong></p>
-      </div>
-
-      <div class="confirmed-items">
-        <h4>Detalle de articulos:</h4>
-        <ul>
-          @for (it of pedidoConfirmado()?.items; track it.producto.id) {
-            <li>
-              {{ it.cantidad }}x {{ it.producto?.nombre }} — {{ it.subtotal | currency: 'ARS':'symbol':'1.2-2' }}
-            </li>
+        <div class="confirmation-info">
+          <p>Se enviará el comprobante a: <strong>{{ pedido.usuario.email }}</strong></p>
+          <p>Dirección de destino: <strong>{{ pedido.usuario.direccion }}</strong></p>
+          <p>Medio de pago: <strong>{{ pedido.metodoPago }}</strong></p>
+          @if (pedido.ultimosDigitosTarjeta) {
+            <p>Detalle de cobro: <strong>{{ pedido.ultimosDigitosTarjeta }}</strong></p>
           }
-        </ul>
-        <h3 class="final-total">Total abonado: {{ pedidoConfirmado()?.total | currency: 'ARS':'symbol':'1.2-2' }}</h3>
-      </div>
+        </div>
 
-      <button class="btn-primary" (click)="volverAlCatalogo()">Volver al Inicio</button>
-    </div>
+        <div class="confirmed-items">
+          <h4>Detalle de artículos:</h4>
+          <ul>
+            @for (it of pedido.items; track it.producto.id) {
+              <li>
+                {{ it.cantidad }}x {{ it.producto?.nombre }} — {{ it.subtotal | currency: 'ARS':'symbol':'1.2-2' }}
+              </li>
+            }
+          </ul>
+          <h3 class="final-total">Total abonado: {{ pedido.total | currency: 'ARS':'symbol':'1.2-2' }}</h3>
+        </div>
+
+        <button class="btn-primary" (click)="volverAlCatalogo()">Volver al Inicio</button>
+      </div>
+    }
   }
 </div>

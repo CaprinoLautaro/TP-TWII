@@ -330,3 +330,44 @@
   background-color: #a0aec0;
   cursor: not-allowed;
 }
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 16px 0;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.payment-option:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.payment-option.selected {
+  border-color: #10b981; 
+  background-color: #ecfdf5;
+  font-weight: 500;
+  color: #065f46;
+}
+
+.payment-option input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+  accent-color: #10b981; 
+  width: 16px;
+  height: 16px;
+}

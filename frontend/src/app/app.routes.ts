@@ -9,6 +9,7 @@ import { StockManager } from './pages/stock-manager/stock-manager';
 import { authGuard, adminGuard } from './guards/auth-guard';
 import { Profile } from './pages/profile/profile';
 import { ProductDetail } from './pages/product-detail/product-detail';
+import { MisOrdenes } from './pages/mis-ordenes/mis-ordenes';
 
 export const routes: Routes = [
 { path: '', component: Home },
@@ -20,7 +21,7 @@ export const routes: Routes = [
   { path: 'productos/nuevo', component: ProductForm, canActivate: [adminGuard] },
   { path: 'productos/stock', component: StockManager, canActivate: [adminGuard] },
   { path: 'producto/:id', component: ProductDetail },
+  { path: 'mis-ordenes', component: MisOrdenes, canActivate: [authGuard] },
   { path: '**', redirectTo: '' },
-
   // acá van signup, signin, cart, etc.
 ];

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { CartService } from '../../services/cartService/cart-service';
 import { ProductService } from '../../services/productService/product-service';
 import { Product } from '../../models/product/product';
+import { Router } from '@angular/router';
 
 interface DetalleItem {
   productId: number;
@@ -22,6 +23,7 @@ interface DetalleItem {
 export class Cart {
   private readonly cartService = inject(CartService);
   private readonly productService = inject(ProductService);
+  private readonly router = inject(Router);
 
   readonly carrito = this.cartService.carrito;
 
@@ -79,7 +81,9 @@ export class Cart {
     this.cambiarCantidad(productId, actual - 1);
   }
 
+  // Redireccion al Pedido
   confirmarCompra(): void {
     console.log('Confirmar compra — pendiente conectar con backend');
+    this.router.navigate(['/order']);
   }
 }
