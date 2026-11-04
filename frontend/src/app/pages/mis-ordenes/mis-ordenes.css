@@ -82,6 +82,12 @@
   color: #64748b;
 }
 
+.order-payment {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 600;
+}
+
 .order-total-badge {
   text-align: right;
   background-color: #f8fafc;

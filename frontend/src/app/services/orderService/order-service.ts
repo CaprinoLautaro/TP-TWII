@@ -107,13 +107,18 @@ export class OrderService {
     return throwError(() => new Error('No hay productos en el carrito.'));
   }
 
+  // Al backend solo le mandamos los últimos 4 dígitos; el resto de los datos de la tarjeta
+  // nunca sale del formulario.
+  const ultimosDigitosTarjeta = infoTarjeta?.match(/\d{4}$/)?.[0];
+
   const payload = {
     usuario: this.getUsuarioActual(),
     items: items.map(it => ({
       productId: it.producto.id,
       cantidad: it.cantidad
     })),
-    metodoPago
+    metodoPago,
+    ultimosDigitosTarjeta
   };
 
   const token = (this.authService as any).token?.() || localStorage.getItem('token') || '';
