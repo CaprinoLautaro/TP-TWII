@@ -45,6 +45,12 @@
               <span class="order-date">
                 📅 {{ pedido.createdAt | date: 'dd/MM/yyyy HH:mm' }}
               </span>
+              <span class="order-payment">
+                💳 {{ pedido.metodoPago || 'Sin especificar' }}
+                @if (pedido.ultimosDigitosTarjeta) {
+                  · ****{{ pedido.ultimosDigitosTarjeta }}
+                }
+              </span>
             </div>
             <div class="order-total-badge">
               <span>Total abonado:</span>

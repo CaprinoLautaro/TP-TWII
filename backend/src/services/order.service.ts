@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma';
 import { OrderRepository } from '../repository/order.repository';
 import { CartService } from './cart.service';
 import { ProductService } from './product.service';
+import { AppError } from '../utils/app-error';
 
 export interface ItemPayload {
   productId: number;
@@ -17,6 +18,8 @@ export interface CrearPedidoDTO {
   };
   items: Array<{ productId: number; cantidad: number }>;
   metodoPago: string;
+  /** Solo los últimos 4 dígitos; el frontend nunca envía el número completo. */
+  ultimosDigitosTarjeta?: string;
 }
 
 export class OrderService {
@@ -27,10 +30,20 @@ export class OrderService {
   ) {}
 
 async confirm(userId: number, dto: CrearPedidoDTO) {
-  const { items, metodoPago } = dto;
+  const { items } = dto;
 
   if (!items || items.length === 0) {
     throw new Error('El carrito no contiene items.');
+  }
+
+  const metodoPago = (dto.metodoPago ?? '').trim();
+  if (!metodoPago) {
+    throw AppError.badRequest('Seleccioná un medio de pago.');
+  }
+
+  const ultimosDigitosTarjeta = dto.ultimosDigitosTarjeta?.trim() || null;
+  if (ultimosDigitosTarjeta && !/^\d{4}$/.test(ultimosDigitosTarjeta)) {
+    throw AppError.badRequest('Los últimos dígitos de la tarjeta son inválidos.');
   }
 
   return await prisma.$transaction(async (tx) => {
@@ -68,6 +81,8 @@ async confirm(userId: number, dto: CrearPedidoDTO) {
       data: {
         userId,
         total: Math.round(totalCalculado),
+        metodoPago,
+        ultimosDigitosTarjeta,
         items: {
           create: itemsParaGuardar.map(it => ({
             productId: it.productId,
@@ -97,7 +112,8 @@ async confirm(userId: number, dto: CrearPedidoDTO) {
         email: nuevaOrden.user.email,
         direccion: nuevaOrden.user.direccion
       },
-      metodoPago,
+      metodoPago: nuevaOrden.metodoPago,
+      ultimosDigitosTarjeta: nuevaOrden.ultimosDigitosTarjeta,
       total: nuevaOrden.total,
       items: nuevaOrden.items
     };
