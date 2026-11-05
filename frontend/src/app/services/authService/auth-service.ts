@@ -1,73 +1,70 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { Usuario } from '../../models/user/user';
 
-const USUARIOS_KEY = 'patitas_usuarios';
+const API_URL = 'http://localhost:3000/api/auth';
+const TOKEN_KEY = 'patitas_token';
 const SESION_KEY = 'patitas_sesion';
 
-// Admin hardcodeado: no se puede registrar ni editar desde la app.
-const ADMIN: Usuario = {
-  id: 0,
-  nombre: 'Admin',
-  apellido: 'Patitas',
-  email: 'admin@patitas.com',
-  direccion: 'Sucursal Central',
-  password: 'Admin123',
-  rol: 'admin',
-};
+interface UsuarioApi {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  direccion: string;
+  rol: 'CLIENTE' | 'ADMIN';
+}
+
+interface AuthResponse {
+  user: UsuarioApi;
+  token: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly http = inject(HttpClient);
   private readonly _usuario = signal<Usuario | null>(this.cargarSesion());
 
   readonly usuarioActual = this._usuario.asReadonly();
   readonly estaLogueado = computed(() => this._usuario() !== null);
   readonly esAdmin = computed(() => this._usuario()?.rol === 'admin');
 
-  /** POST /auth/signup */
-  registrar(datos: Omit<Usuario, 'id' | 'rol'>): Observable<Usuario> {
-    const email = datos.email.trim().toLowerCase();
-    const usuarios = this.cargarUsuarios();
-
-    if (email === ADMIN.email || usuarios.some((u) => u.email === email)) {
-      return throwError(() => new Error('Ya existe una cuenta con ese email.'));
+  get token(): string | null {
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
     }
-
-    const nuevo: Usuario = {
-      id: Math.max(0, ...usuarios.map((u) => Number(u.id))) + 1,
-      nombre: datos.nombre.trim(),
-      apellido: datos.apellido.trim(),
-      email,
-      direccion: datos.direccion.trim(),
-      password: datos.password,
-      rol: 'cliente',
-    };
-    this.guardarUsuarios([...usuarios, nuevo]);
-    this.iniciarSesion(nuevo);
-    return of(this.sinPassword(nuevo));
   }
 
-  /** POST /auth/signin */
-  login(email: string, password: string): Observable<Usuario> {
-    const emailNorm = email.trim().toLowerCase();
-    const usuario = [ADMIN, ...this.cargarUsuarios()].find(
-      (u) => u.email === emailNorm && u.password === password,
+  /** POST /api/auth/signup */
+  registrar(datos: Omit<Usuario, 'id' | 'rol'>): Observable<Usuario> {
+    return this.http.post<AuthResponse>(`${API_URL}/signup`, datos).pipe(
+      tap((res) => this.iniciarSesion(res.user, res.token)),
+      map((res) => this.aUsuario(res.user)),
+      catchError((err) => this.manejarError(err)),
     );
-    if (!usuario) {
-      return throwError(() => new Error('Email o contraseña incorrectos.'));
-    }
-    this.iniciarSesion(usuario);
-    return of(this.sinPassword(usuario));
+  }
+
+  /** POST /api/auth/signin */
+  login(email: string, password: string): Observable<Usuario> {
+    return this.http.post<AuthResponse>(`${API_URL}/signin`, { email, password }).pipe(
+      tap((res) => this.iniciarSesion(res.user, res.token)),
+      map((res) => this.aUsuario(res.user)),
+      catchError((err) => this.manejarError(err)),
+    );
   }
 
   logout(): void {
     this._usuario.set(null);
     try {
       localStorage.removeItem(SESION_KEY);
+      localStorage.removeItem(TOKEN_KEY);
     } catch {}
   }
 
-  /** PUT /usuarios/me */
+  /** PUT /api/auth/me */
   actualizarPerfil(
     cambios: Pick<Usuario, 'nombre' | 'apellido' | 'direccion'>,
   ): Observable<Usuario> {
@@ -75,62 +72,56 @@ export class AuthService {
     if (!actual) {
       return throwError(() => new Error('Tenés que iniciar sesión.'));
     }
-    if (actual.rol === 'admin') {
-      return throwError(() => new Error('El perfil del administrador no se puede modificar.'));
-    }
 
-    const usuarios = this.cargarUsuarios();
-    const i = usuarios.findIndex((u) => u.email === actual.email);
-    if (i === -1) {
-      return throwError(() => new Error('No se encontró el usuario.'));
-    }
-
-    const actualizado: Usuario = {
-      ...usuarios[i],
-      nombre: cambios.nombre.trim(),
-      apellido: cambios.apellido.trim(),
-      direccion: cambios.direccion.trim(),
-    };
-    usuarios[i] = actualizado;
-    this.guardarUsuarios(usuarios);
-    this.iniciarSesion(actualizado);
-    return of(this.sinPassword(actualizado));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${this.token ?? ''}` });
+    return this.http.put<UsuarioApi>(`${API_URL}/me`, cambios, { headers }).pipe(
+      map((u) => this.aUsuario(u)),
+      tap((usuario) => this.guardarSesion(usuario)),
+      catchError((err) => this.manejarError(err)),
+    );
   }
 
   // ---------- internos ----------
-  private iniciarSesion(usuario: Usuario): void {
-    const sesion = this.sinPassword(usuario);
-    this._usuario.set(sesion);
+  private iniciarSesion(user: UsuarioApi, token: string): void {
     try {
-      localStorage.setItem(SESION_KEY, JSON.stringify(sesion));
+      localStorage.setItem(TOKEN_KEY, token);
+    } catch {}
+    this.guardarSesion(this.aUsuario(user));
+  }
+
+  private guardarSesion(usuario: Usuario): void {
+    this._usuario.set(usuario);
+    try {
+      localStorage.setItem(SESION_KEY, JSON.stringify(usuario));
     } catch {}
   }
 
-  private sinPassword(u: Usuario): Usuario {
-    return { ...u, password: undefined };
+  // El backend devuelve el rol en mayúsculas (CLIENTE / ADMIN); el frontend usa minúsculas.
+  private aUsuario(u: UsuarioApi): Usuario {
+    return {
+      id: u.id,
+      nombre: u.nombre,
+      apellido: u.apellido,
+      email: u.email,
+      direccion: u.direccion,
+      rol: u.rol === 'ADMIN' ? 'admin' : 'cliente',
+    };
   }
 
   private cargarSesion(): Usuario | null {
     try {
       const u = JSON.parse(localStorage.getItem(SESION_KEY) ?? 'null');
-      return u && u.email ? (u as Usuario) : null;
+      return u && u.email && localStorage.getItem(TOKEN_KEY) ? (u as Usuario) : null;
     } catch {
       return null;
     }
   }
 
-  private cargarUsuarios(): Usuario[] {
-    try {
-      const lista = JSON.parse(localStorage.getItem(USUARIOS_KEY) ?? '[]');
-      return Array.isArray(lista) ? lista : [];
-    } catch {
-      return [];
+  private manejarError(err: HttpErrorResponse) {
+    if (err.status === 0) {
+      return throwError(() => new Error('No se pudo conectar con el servidor.'));
     }
-  }
-
-  private guardarUsuarios(lista: Usuario[]): void {
-    try {
-      localStorage.setItem(USUARIOS_KEY, JSON.stringify(lista));
-    } catch {}
+    const mensaje = err.error?.message ?? err.error?.error ?? 'Ocurrió un error. Probá de nuevo.';
+    return throwError(() => new Error(mensaje));
   }
 }
