@@ -57,6 +57,9 @@ async function main() {
   }
   console.log(`Usuarios cargados: ${USUARIOS.length}`);
 
+    // Los ids se cargaron a mano: avanzamos el contador para que los registros nuevos no choquen.
+  await prisma.$queryRaw`SELECT setval(pg_get_serial_sequence('"User"', 'id'), (SELECT COALESCE(MAX(id), 1) FROM "User"))`;
+
   // 2. Productos (idempotente por nombre)
   for (const p of PRODUCTOS) {
     await prisma.product.upsert({
