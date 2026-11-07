@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal} from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -16,6 +16,7 @@ export class Signin {
   private readonly router = inject(Router);
 
   mensajeError = '';
+  cargando = signal(false);
 
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -23,15 +24,24 @@ export class Signin {
   });
 
   onSubmit(): void {
+    if (this.cargando()) return;
     this.mensajeError = '';
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
+
+    this.cargando.set(true);
     const { email, password } = this.loginForm.value;
     this.auth.login(email, password).subscribe({
-      next: () => this.router.navigate(['/']),
-      error: (err: Error) => (this.mensajeError = err.message),
+      next: () => {
+        this.cargando.set(false);
+        this.router.navigate(['/']);
+      },
+      error: (err: Error) => {
+        (this.mensajeError = err.message);
+        this.cargando.set(false);
+      },
     });
   }
 }

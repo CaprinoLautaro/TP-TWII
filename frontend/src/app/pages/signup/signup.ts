@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,6 +16,7 @@ import { AuthService } from '../../services/authService/auth-service';
 export class Signup {
   registroForm: FormGroup;
   mensajeError: string = '';
+  cargando = signal(false);
   registroExitoso: boolean = false;
 
   constructor(
@@ -45,15 +46,24 @@ export class Signup {
   }
 
 onSubmit(): void {
+  if (this.cargando()) return;
   this.mensajeError = '';
   if (this.registroForm.invalid) {
     this.registroForm.markAllAsTouched();
     return;
   }
+
+  this.cargando.set(true);
   const { nombre, apellido, email, direccion, password } = this.registroForm.value;
   this.auth.registrar({ nombre, apellido, email, direccion, password }).subscribe({
-    next: () => this.router.navigate(['/']), // queda con la sesión iniciada
-    error: (err: Error) => (this.mensajeError = err.message),
+    next: () => {
+      this.cargando.set(false);
+      this.router.navigate(['/']); // queda con la sesión iniciada
+    },
+    error: (err: Error) => {
+      (this.mensajeError = err.message);
+      this.cargando.set(false);
+    },
   });
 }
 }
