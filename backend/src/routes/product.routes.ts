@@ -1,18 +1,18 @@
 import { Router } from 'express';
+import { authenticate, requireAdmin } from '../middlewares/auth.middleware';
 import type { ProductController } from '../controller/product.controller';
 
 export function createProductRouter(controller: ProductController): Router {
   const router = Router();
 
+  // Catálogo público: cualquiera puede ver los productos sin login.
   router.get('/', controller.getAll);
   router.get('/:id', controller.getById);
 
-  // ⚠️ TODO (cuando esté el módulo auth): estas tres rutas son SOLO PARA ADMIN.
-  // Hoy están abiertas porque authenticate/requireAdmin todavía no están implementados.
-  // Cuando lo estén: router.post('/', authenticate, requireAdmin, controller.create) (idem PATCH y DELETE).
-  router.post('/', controller.create);
-  router.patch('/:id/stock', controller.updateStock);
-  router.delete('/:id', controller.remove);
+  // Escritura: solo admin autenticado.
+  router.post('/', authenticate, requireAdmin, controller.create);
+  router.patch('/:id/stock', authenticate, requireAdmin, controller.updateStock);
+  router.delete('/:id', authenticate, requireAdmin, controller.remove);
 
   return router;
 }

@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { AuthService } from '../authService/auth-service';
 
 /** Item local del frontend (solo id y cantidad; el producto sale de ProductService). */
 export interface CartItem {
@@ -35,6 +36,7 @@ export interface CartResponse {
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
 
   private readonly items = signal<CartItem[]>([]);
   readonly carrito = this.items.asReadonly();
@@ -43,8 +45,20 @@ export class CartService {
   );
 
   constructor() {
-    // Carga el carrito al iniciar la app (por si el usuario recarga).
-    this.cargar();
+    /**
+     * Reacciona al estado de sesión:
+     * - Si el usuario se loguea, carga su carrito desde el backend.
+     * - Si cierra sesión, limpia la Signal local (sin borrar el carrito del DB).
+     *
+     * El carrito en la DB persiste entre sesiones: pertenece al usuario, no a la sesión.
+     */
+    effect(() => {
+      if (this.auth.estaLogueado()) {
+        this.cargar();
+      } else {
+        this.items.set([]);
+      }
+    });
   }
 
   /** GET /api/cart */
@@ -76,20 +90,17 @@ export class CartService {
       .pipe(tap((r) => this.items.set(this.mapItems(r))));
   }
 
+  /** DELETE /api/cart — vacía el carrito completo. */
+  vaciar(): void {
+    this.items.set([]);
+    this.http.delete<CartResponse>('/api/cart').subscribe({
+      next: () => {},
+      error: () => this.items.set([]),
+    });
+  }
+
   /** El backend devuelve items con producto; el frontend solo guarda id y cantidad. */
   private mapItems(r: CartResponse): CartItem[] {
     return r.items.map((i) => ({ productId: i.productId, cantidad: i.cantidad }));
   }
-
-vaciar(): void {
-  this.items.set([]);
-
-  this.http.delete<CartResponse>('/api/cart').subscribe({
-    next: () => {},
-    error: () => {
-      this.items.set([]);
-    }
-  });
 }
-}
-
