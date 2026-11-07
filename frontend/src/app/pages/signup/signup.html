@@ -93,8 +93,13 @@
         </small>
       </div>
 
-      <button type="submit" class="btn-submit" [disabled]="registroForm.invalid">
+      <button type="submit" class="btn-submit" [disabled]="registroForm.invalid|| cargando()" [attr.aria-busy]="cargando()">
+        @if (cargando()) {
+    <span class="spinner" aria-hidden="true"></span>
+    Registrando...
+  } @else {
         Registrarse
+  }
       </button>
     </form>
 

@@ -115,3 +115,25 @@
   background-color: #fca37d;
   cursor: not-allowed;
 }
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.125em;
+  animation: girar 0.7s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+.btn-submit:disabled {
+  background-color: #cfcfcf;
+  color: #6b6b6b;
+  border-color: #cfcfcf;
+  cursor: not-allowed;
+}

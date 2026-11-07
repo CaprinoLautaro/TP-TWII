@@ -46,8 +46,13 @@
       <button
         type="submit"
         class="btn-submit"
-        [disabled]="loginForm.invalid">
+        [disabled]="loginForm.invalid || cargando()" [attr.aria-busy]="cargando()">
+         @if (cargando()) {
+    <span class="spinner" aria-hidden="true"></span>
+    Ingresando...
+  } @else {
         Iniciar sesión
+  }
       </button>
     </form>
 
