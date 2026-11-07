@@ -80,12 +80,28 @@ export class OrderService {
     };
   }
 
-  obtenerPedidos(): Observable<any[]> {
-    const token = (this.authService as any).token?.() || localStorage.getItem('token') || '';
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
 
-    return this.http.get<any[]>(this.apiUrl, { headers });
+async obtenerPedidos(): Promise<any[]> {
+  const auth = this.authService as any;
+  const token = (typeof auth?.token === 'function' ? auth.token() : auth?.token)
+    || auth?.getToken?.()
+    || localStorage.getItem('token')
+    || '';
+
+  const response = await fetch(this.apiUrl, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Error al obtener el historial de pedidos.');
   }
+
+  return await response.json();
+}
 
   obtenerPedidoPorId(id: number): Observable<any> {
     const token = (this.authService as any).token?.() || localStorage.getItem('token') || '';
@@ -100,15 +116,14 @@ export class OrderService {
 
 
   // Metodo para confirmrar el pedido
-  confirmarPedido(metodoPago: string, infoTarjeta?: string): Observable<OrderConfirmation> {
+
+async confirmarPedido(metodoPago: string, infoTarjeta?: string): Promise<OrderConfirmation> {
   const items = this.itemsDetalle();
 
   if (items.length === 0) {
-    return throwError(() => new Error('No hay productos en el carrito.'));
+    throw new Error('No hay productos en el carrito.');
   }
 
-  // Al backend solo le mandamos los últimos 4 dígitos; el resto de los datos de la tarjeta
-  // nunca sale del formulario.
   const ultimosDigitosTarjeta = infoTarjeta?.match(/\d{4}$/)?.[0];
 
   const payload = {
@@ -121,21 +136,39 @@ export class OrderService {
     ultimosDigitosTarjeta
   };
 
-  const token = (this.authService as any).token?.() || localStorage.getItem('token') || '';
-  const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+  const auth = this.authService as any;
+  const token = (typeof auth?.token === 'function' ? auth.token() : auth?.token)
+    || auth?.getToken?.()
+    || localStorage.getItem('token')
+    || '';
 
-  return this.http.post<OrderConfirmation>(this.apiUrl, payload, { headers }).pipe(
-    tap((ordenConfirmada) => {
-      const ordenFinal = {
-        ...ordenConfirmada,
-        items: [...items], 
-        total: this.total(),
-        ...(infoTarjeta ? { ultimosDigitosTarjeta: infoTarjeta } : {})
-      };
-      
-      this.cartService.vaciar();
-      this._pedidoConfirmado.set(ordenFinal);
-    })
-  );
+  const response = await fetch(this.apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(payload)
+  });
+
+  // En caso de error
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Error al procesar el pedido');
+  }
+
+  const ordenConfirmada: OrderConfirmation = await response.json();
+
+  const ordenFinal = {
+    ...ordenConfirmada,
+    items: [...items],
+    total: this.total(),
+    ...(infoTarjeta ? { ultimosDigitosTarjeta: infoTarjeta } : {})
+  };
+
+  this.cartService.vaciar();
+  this._pedidoConfirmado.set(ordenFinal);
+
+  return ordenFinal;
 }
 }

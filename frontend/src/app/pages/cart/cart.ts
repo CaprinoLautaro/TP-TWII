@@ -83,7 +83,6 @@ export class Cart {
 
   // Redireccion al Pedido
   confirmarCompra(): void {
-    console.log('Confirmar compra — pendiente conectar con backend');
     this.router.navigate(['/order']);
   }
 }

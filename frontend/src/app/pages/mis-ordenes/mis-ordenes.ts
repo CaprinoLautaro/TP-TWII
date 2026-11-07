@@ -21,19 +21,17 @@ export class MisOrdenes implements OnInit {
     this.cargarPedidos();
   }
 
-  cargarPedidos(): void {
+  async cargarPedidos(): Promise<void> {
     this.cargando.set(true);
     this.error.set(null);
 
-    this.orderService.obtenerPedidos().subscribe({
-      next: (datos) => {
-        this.pedidos.set(datos || []);
-        this.cargando.set(false);
-      },
-      error: (err) => {
-        this.error.set(err.error?.error || 'No se pudieron cargar tus pedidos.');
-        this.cargando.set(false);
-      }
-    });
+    try {
+      const datos = await this.orderService.obtenerPedidos();
+      this.pedidos.set(datos || []);
+    } catch (err: any) {
+      this.error.set(err.message || 'No se pudieron cargar tus pedidos.');
+    } finally {
+      this.cargando.set(false);
+    }
   }
 }

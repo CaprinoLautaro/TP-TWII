@@ -93,10 +93,6 @@ export class CartService {
   /** DELETE /api/cart — vacía el carrito completo. */
   vaciar(): void {
     this.items.set([]);
-    this.http.delete<CartResponse>('/api/cart').subscribe({
-      next: () => {},
-      error: () => this.items.set([]),
-    });
   }
 
   /** El backend devuelve items con producto; el frontend solo guarda id y cantidad. */

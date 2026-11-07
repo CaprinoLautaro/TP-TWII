@@ -26,7 +26,6 @@ export class Order {
 
   public fechaActual: Date = new Date();
   public cargando = signal<boolean>(false);
-  public metodoPagoSeleccionado = signal<string>('Efectivo contra entrega');
 
   // Estado de la tarjeta
   public tipoTarjeta = signal<string | null>(null);
@@ -50,10 +49,6 @@ export class Order {
     dniTitular: ['', [Validators.required, Validators.pattern(/^\d{7,8}$/)]],
   });
 
-  seleccionarMetodoPago(metodo: string): void {
-    this.metodoPagoSeleccionado.set(metodo);
-    this.errorMensaje.set(null);
-  }
 
   volverAlCatalogo(): void {
     this.orderService.limpiarPedido();
@@ -116,34 +111,28 @@ export class Order {
     };
   }
 
-  
-  confirmarPedido(): void {
+
+  async confirmarPedido(): Promise<void> {
     this.errorMensaje.set(null);
-    let infoTarjeta: string | undefined = undefined;
 
-    if (this.metodoPagoSeleccionado() === 'Tarjeta / Débito') {
-      if (this.pagoForm.invalid) {
-        this.pagoForm.markAllAsTouched();
-        this.errorMensaje.set('Por favor completa todos los datos de la tarjeta correctamente.');
-        return;
-      }
+     if (this.pagoForm.invalid) {
+       this.pagoForm.markAllAsTouched();
+       this.errorMensaje.set('Por favor completa todos los datos de la tarjeta correctamente.');
+       return;
+     }
 
-      const numTarjeta = (this.pagoForm.get('numeroTarjeta')?.value || '').replace(/\D/g, '');
-      const nombreMarca = (this.tipoTarjeta() ?? 'Tarjeta').toUpperCase();
-      infoTarjeta = `${nombreMarca} ****${numTarjeta.slice(-4)}`;
-    }
+     const numTarjeta = (this.pagoForm.get('numeroTarjeta')?.value || '').replace(/\D/g, '');
+     const nombreMarca = (this.tipoTarjeta() ?? 'Tarjeta').toUpperCase();
+     const infoTarjeta = `${nombreMarca} ****${numTarjeta.slice(-4)}`;
 
     this.cargando.set(true);
 
-    this.orderService.confirmarPedido(this.metodoPagoSeleccionado(), infoTarjeta).subscribe({
-      next: () => {
-        this.cargando.set(false);
-      },
-      error: (err: any) => {
-        this.cargando.set(false);
-        const mensaje = err.error?.error || err.error?.message || err.message || 'Ocurrió un error al procesar el pedido';
-        this.errorMensaje.set(mensaje);
-      }
-    });
-  }
+    try {
+      await this.orderService.confirmarPedido('Tarjeta / Débito', infoTarjeta);
+    } catch (err: any) {
+      this.errorMensaje.set(err.message || 'Ocurrió un error al procesar el pedido');
+    }finally {
+    this.cargando.set(false);
+     }
+   }
 }

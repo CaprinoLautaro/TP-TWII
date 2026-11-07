@@ -58,40 +58,8 @@
               <hr class="divider" />
 
               <h3>💳 Forma de Pago</h3>
-              <div class="payment-options">
-                <label class="payment-option" [class.selected]="metodoPagoSeleccionado() === 'Efectivo contra entrega'">
-                  <input 
-                    type="radio" 
-                    name="metodoPago" 
-                    [checked]="metodoPagoSeleccionado() === 'Efectivo contra entrega'"
-                    (change)="seleccionarMetodoPago('Efectivo contra entrega')"
-                  />
-                  <span>💵 Efectivo</span>
-                </label>
-
-                <label class="payment-option" [class.selected]="metodoPagoSeleccionado() === 'Transferencia bancaria'">
-                  <input 
-                    type="radio" 
-                    name="metodoPago" 
-                    [checked]="metodoPagoSeleccionado() === 'Transferencia bancaria'"
-                    (change)="seleccionarMetodoPago('Transferencia bancaria')"
-                  />
-                  <span>📱 Transferencia bancaria (Alias)</span>
-                </label>
-
-                <label class="payment-option" [class.selected]="metodoPagoSeleccionado() === 'Tarjeta / Débito'">
-                  <input 
-                    type="radio" 
-                    name="metodoPago" 
-                    [checked]="metodoPagoSeleccionado() === 'Tarjeta / Débito'"
-                    (change)="seleccionarMetodoPago('Tarjeta / Débito')"
-                  />
-                  <span>💳 Tarjeta Débito / Crédito</span>
-                </label>
-              </div>
 
 
-              @if (metodoPagoSeleccionado() === 'Tarjeta / Débito') {
                 <div class="card-payment-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
                   <h4>Datos de la Tarjeta</h4>
                   <form [formGroup]="pagoForm">
@@ -159,7 +127,7 @@
                     </div>
                   </form>
                 </div>
-              }
+
 
               <hr class="divider" />
 
@@ -188,7 +156,7 @@
               <button 
                 class="btn-confirm" 
                 (click)="confirmarPedido()" 
-                [disabled]="cargando() || (metodoPagoSeleccionado() === 'Tarjeta / Débito' && pagoForm.invalid)"
+                [disabled]="cargando() ||  pagoForm.invalid"
               >
                 {{ cargando() ? 'Procesando pedido...' : 'Confirmar Pedido' }}
               </button>
