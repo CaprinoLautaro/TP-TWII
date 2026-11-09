@@ -13,4 +13,4 @@ export type NuevoProducto = Omit<Product, 'id'>;
 
 export const CATEGORIAS = ['Alimento', 'Juguetes', 'Accesorios', 'Higiene', 'Camas'];
 
-export const IMAGEN_POR_DEFECTO = 'https://loremflickr.com/400/300/pet?lock=99';
+export const IMAGEN_POR_DEFECTO = 'img/productos/default.png';
