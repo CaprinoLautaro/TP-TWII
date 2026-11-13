@@ -11,14 +11,6 @@
     @if (hayProblemasDeStock()) {
       <div class="cart-aviso-stock" role="alert">
         <strong>⚠️ Algunos productos ya no tienen stock suficiente.</strong>
-        <ul>
-          @for (item of itemsConStockInsuficiente(); track item.productId) {
-            <li>
-              "{{ item.producto.nombre }}" — pediste <strong>{{ item.cantidad }}</strong>,
-              disponibles <strong>{{ item.producto.stock }}</strong>.
-            </li>
-          }
-        </ul>
       </div>
     }
 
