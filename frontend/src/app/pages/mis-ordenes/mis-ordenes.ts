@@ -13,25 +13,30 @@ import { OrderService } from '../../services/orderService/order-service';
 export class MisOrdenes implements OnInit {
   private readonly orderService = inject(OrderService);
 
+  // Signals para manejar la lista de ordenes, el estado de carga y posibles errores
   public readonly pedidos = signal<any[]>([]);
   public readonly cargando = signal<boolean>(true);
   public readonly error = signal<string | null>(null);
 
+  // Al cargar el componente, pide el historial de pedidos 
   ngOnInit(): void {
     this.cargarPedidos();
   }
 
-  async cargarPedidos(): Promise<void> {
+  // Consulta las ordenes del usuario y actualiza los signals de la vista
+  cargarPedidos(): void {
     this.cargando.set(true);
     this.error.set(null);
 
-    try {
-      const datos = await this.orderService.obtenerPedidos();
-      this.pedidos.set(datos || []);
-    } catch (err: any) {
-      this.error.set(err.message || 'No se pudieron cargar tus pedidos.');
-    } finally {
-      this.cargando.set(false);
-    }
+    this.orderService.obtenerPedidos().subscribe({
+      next: (datos) => {
+        this.pedidos.set(datos ?? []);
+        this.cargando.set(false);
+      },
+      error: (err: Error) => {
+        this.error.set(err.message || 'No se pudieron cargar tus pedidos.');
+        this.cargando.set(false);
+      }
+    });
   }
 }

@@ -1,18 +1,20 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, throwError, tap } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { CartService } from '../cartService/cart-service';
 import { ProductService } from '../productService/product-service';
 import { AuthService } from '../authService/auth-service';
 import { Product } from '../../models/product/product';
 import { Usuario } from '../../models/user/user';
 
+// Detalle de cada item del carrito con su producto y subtotal
 export interface OrderItemDetail {
   producto: Product;
   cantidad: number;
   subtotal: number;
 }
 
+// Estructura del comprobante que se muestra al confirmar el pedido
 export interface OrderConfirmation {
   orderId: string;
   fecha: Date;
@@ -20,8 +22,10 @@ export interface OrderConfirmation {
   items: OrderItemDetail[];
   total: number;
   metodoPago: string;
-  ultimosDigitosTarjeta?: string; 
+  ultimosDigitosTarjeta?: string;
 }
+
+const API_URL = 'http://localhost:3000/api/orders';
 
 @Injectable({
   providedIn: 'root'
@@ -30,145 +34,108 @@ export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly cartService = inject(CartService);
   private readonly productService = inject(ProductService);
-  private readonly authService = inject(AuthService);
-
-  private readonly apiUrl = 'http://localhost:3000/api/orders';
+  private readonly auth = inject(AuthService);
 
   private readonly _pedidoConfirmado = signal<OrderConfirmation | null>(null);
   readonly pedidoConfirmado = this._pedidoConfirmado.asReadonly();
 
+  // Combina los ids del carrito con los datos completos del catalogo para calcular subtotales
   readonly itemsDetalle = computed<OrderItemDetail[]>(() => {
     const productos = this.productService.listaProductos();
-    const resultado: OrderItemDetail[] = [];
-
-    for (const item of this.cartService.carrito()) {
-      const producto = productos.find(p => p.id === item.productId);
-      if (producto) {
-        resultado.push({
-          producto,
-          cantidad: item.cantidad,
-          subtotal: producto.precio * item.cantidad,
-        });
-      }
-    }
-    return resultado;
+    return this.cartService.carrito()
+      .map(item => {
+        const producto = productos.find(p => p.id === item.productId);
+        return producto
+          ? { producto, cantidad: item.cantidad, subtotal: producto.precio * item.cantidad }
+          : null;
+      })
+      .filter((item): item is OrderItemDetail => item !== null);
   });
 
+  // Suma el subtotal de todos los items para obtener el total a pagar
   readonly total = computed(() =>
     this.itemsDetalle().reduce((acc, item) => acc + item.subtotal, 0)
   );
 
+  // Suma las cantidades para saber el total de unidades del pedido
   readonly totalUnidades = computed(() =>
     this.itemsDetalle().reduce((acc, item) => acc + item.cantidad, 0)
   );
 
-  getUsuarioActual(): Omit<Usuario, 'password'> {
-    const usuarioLogeado = this.authService.usuarioActual?.();
-    if (usuarioLogeado) {
-      return {
-        nombre: usuarioLogeado.nombre,
-        apellido: usuarioLogeado.apellido,
-        email: usuarioLogeado.email,
-        direccion: usuarioLogeado.direccion,
-      };
-    }
+
+  // Devuelve los datos del usuario actual sin incluir la contra
+  getUsuarioActual(): Omit<Usuario, 'password'> | null {
+    const u = this.auth.usuarioActual();
+    if (!u) return null;
     return {
-      nombre: 'Juan',
-      apellido: 'Perez',
-      email: 'juan.perez@ejemplo.com',
-      direccion: 'Av. Corrientes 1234, CABA',
+      nombre: u.nombre,
+      apellido: u.apellido,
+      email: u.email,
+      direccion: u.direccion,
     };
   }
 
-
-async obtenerPedidos(): Promise<any[]> {
-  const auth = this.authService as any;
-  const token = (typeof auth?.token === 'function' ? auth.token() : auth?.token)
-    || auth?.getToken?.()
-    || localStorage.getItem('token')
-    || '';
-
-  const response = await fetch(this.apiUrl, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Error al obtener el historial de pedidos.');
+ // GET /api/orders Obtiene el historial de pedidos del usuario logueado
+  obtenerPedidos(): Observable<any[]> {
+    return this.http.get<any[]>(API_URL).pipe(
+      catchError(err => this.manejarError(err, 'Error al obtener el historial de pedidos.'))
+    );
   }
 
-  return await response.json();
-}
-
+  //  GET /api/orders/:id  Obtiene el detalle de un pedido puntual por su ID
   obtenerPedidoPorId(id: number): Observable<any> {
-    const token = (this.authService as any).token?.() || localStorage.getItem('token') || '';
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
-
-    return this.http.get<any>(`${this.apiUrl}/${id}`, { headers });
+    return this.http.get<any>(`${API_URL}/${id}`).pipe(
+      catchError(err => this.manejarError(err, 'Error al obtener el pedido.'))
+    );
   }
 
+  // Resetea el comprobante confirmado para poder iniciar un nuevo pedido
   limpiarPedido(): void {
     this._pedidoConfirmado.set(null);
   }
 
+  // POST /api/orders Envia el pedido al backend, vacia el carrito y actualiza el stock
+  confirmarPedido(metodoPago: string, infoTarjeta?: string): Observable<OrderConfirmation> {
+    const items = this.itemsDetalle();
 
-  // Metodo para confirmrar el pedido
+    if (items.length === 0) {
+      return throwError(() => new Error('No hay productos en el carrito.'));
+    }
 
-async confirmarPedido(metodoPago: string, infoTarjeta?: string): Promise<OrderConfirmation> {
-  const items = this.itemsDetalle();
+    // Extraigo los ultimos 4 digitos de la tarjeta para guardar en el backend
+    const ultimosDigitos = infoTarjeta?.match(/\d{4}$/)?.[0];
 
-  if (items.length === 0) {
-    throw new Error('No hay productos en el carrito.');
+    const payload = {
+      usuario: this.getUsuarioActual(),
+      items: items.map(it => ({
+        productId: it.producto.id,
+        cantidad: it.cantidad
+      })),
+      metodoPago,
+      ultimosDigitosTarjeta: ultimosDigitos
+    };
+
+    return this.http.post<OrderConfirmation>(API_URL, payload).pipe(
+      map(ordenBackend => ({
+        ...ordenBackend,
+        items: [...items],
+        ...(infoTarjeta ? { ultimosDigitosTarjeta: infoTarjeta } : {})
+      })),
+      tap(ordenFinal => {
+        this.cartService.vaciar();
+        this._pedidoConfirmado.set(ordenFinal);
+        this.productService.cargar(); 
+      }),
+      catchError(err => this.manejarError(err, 'Error al procesar el pedido.'))
+    );
   }
 
-  const ultimosDigitosTarjeta = infoTarjeta?.match(/\d{4}$/)?.[0];
-
-  const payload = {
-    usuario: this.getUsuarioActual(),
-    items: items.map(it => ({
-      productId: it.producto.id,
-      cantidad: it.cantidad
-    })),
-    metodoPago,
-    ultimosDigitosTarjeta
-  };
-
-  const auth = this.authService as any;
-  const token = (typeof auth?.token === 'function' ? auth.token() : auth?.token)
-    || auth?.getToken?.()
-    || localStorage.getItem('token')
-    || '';
-
-  const response = await fetch(this.apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify(payload)
-  });
-
-  // En caso de error
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || 'Error al procesar el pedido');
+  // Maneja los errores de las peticiones HTTP y devuelve un observable con el mensaje adecuado
+  private manejarError(err: HttpErrorResponse, porDefecto: string) {
+    if (err.status === 0) {
+      return throwError(() => new Error('No se pudo conectar con el servidor.'));
+    }
+    const mensaje = err.error?.error ?? err.error?.message ?? porDefecto;
+    return throwError(() => new Error(mensaje));
   }
-
-  const ordenConfirmada: OrderConfirmation = await response.json();
-
-  const ordenFinal = {
-    ...ordenConfirmada,
-    items: [...items],
-    total: this.total(),
-    ...(infoTarjeta ? { ultimosDigitosTarjeta: infoTarjeta } : {})
-  };
-
-  this.cartService.vaciar();
-  this._pedidoConfirmado.set(ordenFinal);
-
-  return ordenFinal;
-}
 }
