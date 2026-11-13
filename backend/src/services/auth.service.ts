@@ -5,12 +5,15 @@ import { AppError } from '../utils/app-error';
 import type { User } from '../../generated/prisma/client';
 import type { AuthRepository } from '../repository/auth.repository';
 import type { SigninDto, SignupDto, UpdateProfileDto } from '../types/auth.types';
+import { randomBytes, createHash } from 'node:crypto';
+import { MailService } from './mail.service';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export class AuthService {
   constructor(private readonly repository: AuthRepository) {}
+  private readonly mailService = new MailService();
 
   async signup(dto: SignupDto) {
     const nombre = dto.nombre?.trim();
@@ -53,6 +56,88 @@ export class AuthService {
     return { user: this.toPublicUser(user), token: this.generateToken(user) };
   }
 
+  private generateResetToken() {
+    const token = randomBytes(32).toString('hex');
+
+    const tokenHash = createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    return { token, tokenHash, expiresAt };
+  }
+
+
+  async requestPasswordReset(email: string) {
+    const emailNormalizado = email?.trim().toLowerCase();
+
+    if (!emailNormalizado || !EMAIL_REGEX.test(emailNormalizado)) {
+      throw AppError.badRequest('Ingresá un email válido.');
+    }
+
+    const user = await this.repository.findByEmail(emailNormalizado);
+
+    if (!user) {
+      return;
+    }
+
+    const { token, tokenHash, expiresAt } = this.generateResetToken();
+
+    await this.repository.saveResetToken(
+      user.id,
+      tokenHash,
+      expiresAt
+    );
+
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      token
+    );
+  }
+
+
+  async resetPassword(token: string, newPassword: string) {
+
+    if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+      throw AppError.badRequest('El enlace de recuperación no es válido.');
+    }
+
+    if (!newPassword || !PASSWORD_REGEX.test(newPassword)) {
+      throw AppError.badRequest(
+        'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.'
+      );
+    }
+
+    const tokenHash = createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user = await this.repository.findByResetTokenHash(tokenHash);
+
+    if (!user || !user.resetTokenExpiresAt ||
+      user.resetTokenExpiresAt <= new Date()) {
+      throw AppError.badRequest(
+        'El enlace de recuperación es inválido o ha vencido.'
+      );
+    }
+
+    const passwordHash = await hash(newPassword, 10);
+
+    const updated = await this.repository.updatePasswordWithResetToken(
+      user.id,
+      tokenHash,
+      passwordHash
+    );
+
+    if (!updated) {
+      throw AppError.badRequest(
+        'El enlace de recuperación es inválido o ha vencido.'
+      );
+    }
+  }
+
+
   async getProfile(_userId: number) {
     // TODO: devolver el usuario sin el campo password.
     throw AppError.notImplemented('getProfile');
@@ -63,10 +148,18 @@ export class AuthService {
     throw AppError.notImplemented('updateProfile');
   }
 
-    private toPublicUser(user: User) {
-    const { password: _password, ...resto } = user;
+
+  private toPublicUser(user: User) {
+    const {
+      password: _password,
+      resetTokenHash: _resetTokenHash,
+      resetTokenExpiresAt: _resetTokenExpiresAt,
+      ...resto
+    } = user;
+
     return resto;
   }
+
 
   private generateToken(user: User) {
     if (!config.jwtSecret) {
