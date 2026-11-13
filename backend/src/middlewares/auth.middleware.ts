@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { config } from '../config/config';
 import { AppError } from '../utils/app-error';
 
 declare global {
@@ -10,10 +11,12 @@ declare global {
   }
 }
 
-/**
- * Verifica el JWT del header "Authorization: Bearer <token>".
- * Extrae el userId del payload y lo deja en req.user.
- */
+interface JwtPayload {
+  sub?: string;
+  userId?: number;
+  rol?: string;
+}
+
 export function authenticate(req: Request, _res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
@@ -21,15 +24,12 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
     throw AppError.unauthorized('Token no proporcionado.');
   }
 
-  const token = authHeader.slice(7);
+  if (!config.jwtSecret) {
+    throw new Error('Falta JWT_SECRET en la configuración del backend.');
+  }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub?: string;
-      userId?: number;
-      rol?: string;
-    };
-
+    const payload = jwt.verify(authHeader.slice(7), config.jwtSecret) as JwtPayload;
     const userId = payload.userId ?? Number(payload.sub);
 
     if (!userId || Number.isNaN(userId)) {
@@ -44,9 +44,6 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
   }
 }
 
-/**
- * Deja pasar solo a usuarios con rol ADMIN. Requiere `authenticate` antes.
- */
 export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
   if (req.user?.rol !== 'ADMIN') {
     throw AppError.forbidden('Acceso denegado: se requiere rol ADMIN.');

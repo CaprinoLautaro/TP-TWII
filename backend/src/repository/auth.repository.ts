@@ -17,6 +17,7 @@ export class AuthRepository {
     return this.prisma.user.create({ data: { ...resto, password: passwordHash } });
   }
 
+  /** Actualiza los datos editables del perfil (nombre, apellido, dirección). */
   updateProfile(id: number, data: UpdateProfileDto): Promise<User> {
     return this.prisma.user.update({ where: { id }, data });
   }

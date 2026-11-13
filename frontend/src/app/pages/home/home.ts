@@ -56,10 +56,7 @@ export class Home {
     return this.carrito().find((i) => i.productId === productId)?.cantidad ?? 0;
   }
 
-  /**
-   * Agrega un producto al carrito. Si el usuario no está logueado,
-   * redirige al login sin hacer la request (evita el 401 innecesario).
-   */
+  /** Si el usuario no está logueado, redirige al login sin hacer la request (evita el 401). */
   agregarAlCarrito(producto: Product): void {
     if (!this.auth.estaLogueado()) {
       this.router.navigate(['/signin']);
@@ -67,18 +64,13 @@ export class Home {
     }
 
     this.cartService.agregar(producto.id).subscribe({
-      next: () => {
-        this.mensaje.set({ tipo: 'ok', texto: `"${producto.nombre}" agregado al carrito.` });
-        this.limpiarMensaje();
-      },
-      error: (e) => {
-        this.mensaje.set({ tipo: 'error', texto: e.message });
-        this.limpiarMensaje();
-      },
+      next: () => this.mostrarMensaje('ok', `"${producto.nombre}" agregado al carrito.`),
+      error: (e) => this.mostrarMensaje('error', e.message),
     });
   }
 
-  private limpiarMensaje(): void {
+  private mostrarMensaje(tipo: Mensaje['tipo'], texto: string): void {
+    this.mensaje.set({ tipo, texto });
     setTimeout(() => this.mensaje.set(null), 3000);
   }
 }

@@ -9,7 +9,7 @@ export const authGuard: CanActivateFn = () => {
   return auth.estaLogueado() ? true : router.createUrlTree(['/signin']);
 };
 
-/** Requiere ser administrador. */
+/** Requiere ser admin. Si no está logueado → /signin. Si está logueado pero no es admin → /. */
 export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);

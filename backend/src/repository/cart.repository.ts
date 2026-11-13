@@ -1,6 +1,5 @@
-import type { CartItem, PrismaClient, Product } from '../../generated/prisma/client';
-
-export type CartItemWithProduct = CartItem & { product: Product };
+import type { CartItem, PrismaClient } from '../../generated/prisma/client';
+import type { CartItemWithProduct } from '../types/cart.types';
 
 export class CartRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -19,8 +18,8 @@ export class CartRepository {
     });
   }
 
-  /** Crea el item o le setea la cantidad exacta si ya existe. */
-  saveItem(userId: number, productId: number, cantidad: number): Promise<CartItem> {
+  /** Crea el item o actualiza la cantidad si ya existe (upsert atómico). */
+  upsertItem(userId: number, productId: number, cantidad: number): Promise<CartItem> {
     return this.prisma.cartItem.upsert({
       where: { userId_productId: { userId, productId } },
       update: { cantidad },

@@ -1,10 +1,9 @@
 import { Component, computed, inject } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { CartService } from '../../services/cartService/cart-service';
 import { ProductService } from '../../services/productService/product-service';
 import { Product } from '../../models/product/product';
-import { Router } from '@angular/router';
 
 interface DetalleItem {
   productId: number;
@@ -26,12 +25,10 @@ export class Cart {
   private readonly router = inject(Router);
 
   readonly carrito = this.cartService.carrito;
-
   readonly cantidadTotal = this.cartService.cantidadTotal;
+  readonly vacio = computed(() => this.carrito().length === 0);
 
-  /**
-   * Cruza los items del carrito con la lista de productos.
-   */
+  /** Cruza los items del carrito con el catálogo para mostrar el detalle. */
   readonly detalle = computed<DetalleItem[]>(() => {
     const productos = this.productService.listaProductos();
     return this.carrito()
@@ -48,13 +45,27 @@ export class Cart {
       .filter((x): x is DetalleItem => x !== null);
   });
 
-  /** Total en pesos del carrito. */
   readonly total = computed(() =>
     this.detalle().reduce((acc, d) => acc + d.subtotal, 0),
   );
 
-  /** Indica si el carrito está vacío. */
-  readonly vacio = computed(() => this.carrito().length === 0);
+  /**
+   * Items cuya cantidad supera el stock actual.
+   * Puede pasar si el stock cambió después de agregar al carrito.
+   */
+  readonly itemsConStockInsuficiente = computed(() =>
+    this.detalle().filter((d) => d.cantidad > d.producto.stock),
+  );
+
+  /** Hay al menos un item con stock insuficiente. */
+  readonly hayProblemasDeStock = computed(
+    () => this.itemsConStockInsuficiente().length > 0,
+  );
+
+  /** ¿Este item ya alcanzó el stock disponible? (para deshabilitar el "+"). */
+  esLimiteStock(item: DetalleItem): boolean {
+    return item.cantidad >= item.producto.stock;
+  }
 
   quitar(productId: number): void {
     this.cartService.quitar(productId).subscribe({
@@ -62,27 +73,26 @@ export class Cart {
     });
   }
 
-  /** Cambia la cantidad exacta de un producto. Si es 0 o menos, lo elimina. */
   cambiarCantidad(productId: number, cantidad: number): void {
     this.cartService.cambiarCantidad(productId, cantidad).subscribe({
       error: (e) => console.error(e.message),
     });
   }
 
-  /** Suma 1 a la cantidad actual del item. */
   incrementar(productId: number): void {
-    const actual = this.carrito().find((i) => i.productId === productId)?.cantidad ?? 0;
-    this.cambiarCantidad(productId, actual + 1);
+    const item = this.detalle().find((d) => d.productId === productId);
+    if (!item || this.esLimiteStock(item)) return;
+    this.cambiarCantidad(productId, item.cantidad + 1);
   }
 
-  /** Resta 1 a la cantidad actual. Si llega a 0, quita el item. */
   decrementar(productId: number): void {
-    const actual = this.carrito().find((i) => i.productId === productId)?.cantidad ?? 0;
-    this.cambiarCantidad(productId, actual - 1);
+    const item = this.detalle().find((d) => d.productId === productId);
+    if (!item) return;
+    this.cambiarCantidad(productId, item.cantidad - 1);
   }
 
-  // Redireccion al Pedido
   confirmarCompra(): void {
+    if (this.hayProblemasDeStock()) return;
     this.router.navigate(['/order']);
   }
 }

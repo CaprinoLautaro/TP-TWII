@@ -7,6 +7,21 @@
       <a routerLink="/" class="btn">Ver productos</a>
     </div>
   } @else {
+
+    @if (hayProblemasDeStock()) {
+      <div class="cart-aviso-stock" role="alert">
+        <strong>⚠️ Algunos productos ya no tienen stock suficiente.</strong>
+        <ul>
+          @for (item of itemsConStockInsuficiente(); track item.productId) {
+            <li>
+              "{{ item.producto.nombre }}" — pediste <strong>{{ item.cantidad }}</strong>,
+              disponibles <strong>{{ item.producto.stock }}</strong>.
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
     <ul class="cart-lista">
       @for (item of detalle(); track item.productId) {
         <li class="cart-item">
@@ -14,13 +29,28 @@
 
           <div class="cart-item-info">
             <h3>{{ item.producto.nombre }}</h3>
-            <p class="precio-unitario">{{ item.producto.precio | currency:'ARS':'symbol':'1.0-0' }} c/u</p>
+            <p class="precio-unitario">
+              {{ item.producto.precio | currency:'ARS':'symbol':'1.0-0' }} c/u
+            </p>
+            @if (item.cantidad > item.producto.stock) {
+              <p class="stock stock-error">
+                Sin stock suficiente (quedan {{ item.producto.stock }})
+              </p>
+            } @else if (item.producto.stock - item.cantidad <= 2) {
+              <p class="stock stock-bajo">
+                ¡Quedan {{ item.producto.stock - item.cantidad }}!
+              </p>
+            }
           </div>
 
           <div class="cart-item-cantidad">
             <button (click)="decrementar(item.productId)" aria-label="Restar">−</button>
             <span>{{ item.cantidad }}</span>
-            <button (click)="incrementar(item.productId)" aria-label="Sumar">+</button>
+            <button
+              (click)="incrementar(item.productId)"
+              [disabled]="esLimiteStock(item)"
+              [attr.aria-label]="'Sumar' + (esLimiteStock(item) ? ' (sin stock)' : '')"
+            >+</button>
           </div>
 
           <div class="cart-item-subtotal">
@@ -39,9 +69,18 @@
         <span>Total ({{ cantidadTotal() }} {{ cantidadTotal() === 1 ? 'unidad' : 'unidades' }})</span>
         <strong>{{ total() | currency:'ARS':'symbol':'1.0-0' }}</strong>
       </div>
-      <button class="btn-confirmar" (click)="confirmarCompra()">
+      <button
+        class="btn-confirmar"
+        (click)="confirmarCompra()"
+        [disabled]="hayProblemasDeStock()"
+      >
         Confirmar compra
       </button>
+      @if (hayProblemasDeStock()) {
+        <p class="cart-hint">
+          Ajustá los productos sin stock antes de confirmar.
+        </p>
+      }
     </footer>
   }
 </section>

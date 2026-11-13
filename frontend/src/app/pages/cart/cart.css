@@ -134,3 +134,63 @@
     }
   }
 }
+
+/* Banner de advertencia de stock */
+.cart-aviso-stock {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff4e5;
+  border: 1px solid #f0b060;
+  border-radius: 8px;
+  color: #7a4a00;
+}
+
+.cart-aviso-stock ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.cart-aviso-stock li {
+  margin-bottom: 0.35rem;
+}
+
+.btn-ajustar {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+  background: #fff;
+  border: 1px solid #c08030;
+  border-radius: 4px;
+  color: #7a4a00;
+  cursor: pointer;
+}
+
+.btn-ajustar:hover {
+  background: #fff8ee;
+}
+
+/* Mensaje por item */
+.stock-error {
+  color: #c00;
+  font-weight: 500;
+}
+
+.stock-bajo {
+  color: #b26a00;
+  font-weight: 500;
+}
+
+/* Botones deshabilitados */
+.cart-item-cantidad button:disabled,
+.btn-confirmar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hint debajo del botón confirmar */
+.cart-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #7a4a00;
+  text-align: center;
+}
