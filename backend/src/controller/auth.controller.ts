@@ -13,12 +13,13 @@ export class AuthController {
     res.json(await this.service.signin(req.body));
   };
 
+  // En estas dos rutas el middleware `authenticate` ya verificó el token y cargó req.user.
   me = async (req: Request, res: Response) => {
-    res.json(await this.service.getProfile(this.userId(req)));
+    res.json(await this.service.getProfile(req.user!.id));
   };
 
   updateMe = async (req: Request, res: Response) => {
-    res.json(await this.service.updateProfile(this.userId(req), req.body));
+    res.json(await this.service.updateProfile(req.user!.id, req.body));
   };
 
   // ─── helper ─────────────────────────────────────────────────

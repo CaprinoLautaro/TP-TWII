@@ -1,7 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { CATEGORIAS, NuevoProducto } from '../../models/product/product';
+import { NuevoProducto } from '../../models/product/product';
+import { CategoryService } from '../../services/categoryService/category-service';
 import { ProductService } from '../../services/productService/product-service';
 import { ImageService } from '../../services/imageService/image-service';
 
@@ -16,9 +17,19 @@ export class ProductForm {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
   private readonly imageService = inject(ImageService);
+  private readonly categoryService = inject(CategoryService);
 
+  readonly categorias = this.categoryService.nombres;
+  readonly errorCategorias = this.categoryService.errorCarga;
 
-  readonly categorias = CATEGORIAS;
+  reintentarCategorias(): void {
+    this.categoryService.cargar();
+  }
+
+  // Alta de una categoría nueva (solo llega acá el admin: la ruta del formulario está protegida)
+  readonly agregandoCategoria = signal(false);
+  readonly nuevaCategoria = signal('');
+  readonly errorCategoria = signal('');
   readonly mensajeError = signal('');
   readonly creado = signal(false);
   readonly imagenPreview = signal('');
@@ -61,6 +72,28 @@ export class ProductForm {
         setTimeout(() => this.router.navigate(['/']), 1200);
       },
       error: (err: Error) => this.mensajeError.set(err.message),
+    });
+  }
+
+  abrirNuevaCategoria(): void {
+    this.errorCategoria.set('');
+    this.nuevaCategoria.set('');
+    this.agregandoCategoria.set(true);
+  }
+
+  cancelarNuevaCategoria(): void {
+    this.agregandoCategoria.set(false);
+    this.errorCategoria.set('');
+  }
+
+  guardarNuevaCategoria(): void {
+    this.errorCategoria.set('');
+    this.categoryService.crear(this.nuevaCategoria()).subscribe({
+      next: (cat) => {
+        this.form.controls.clasificacion.setValue(cat.nombre); // queda elegida
+        this.agregandoCategoria.set(false);
+      },
+      error: (err: Error) => this.errorCategoria.set(err.message),
     });
   }
 

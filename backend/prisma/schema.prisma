@@ -33,11 +33,19 @@ model User {
   orders    Order[]
 }
 
+/// Categorías de producto. El admin puede agregar nuevas desde la app.
+/// Product.clasificacion guarda el nombre de la categoría (texto), validado contra esta tabla.
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
+  createdAt DateTime @default(now())
+}
+
 model Product {
   id            Int      @id @default(autoincrement())
   nombre        String   @unique
   descripcion   String
-  clasificacion String // Alimento | Juguetes | Accesorios | Higiene | Camas
+  clasificacion String // nombre de una Categoria (Alimento, Juguetes, ...)
   precio        Int // en pesos, sin decimales
   stock         Int      @default(0)
   imagen        String   @default("")

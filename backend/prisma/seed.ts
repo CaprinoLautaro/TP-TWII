@@ -13,12 +13,13 @@ const PRODUCTOS = [
   { nombre: 'Cama Acolchada Mediana', descripcion: 'Lavable, base antideslizante, ideal para perros y gatos.', clasificacion: 'Camas', precio: 32000, stock: 5, imagen: 'img/productos/colchon-mediano.jpg' },
 ];
 
+const CATEGORIAS = ['Alimento', 'Juguetes', 'Accesorios', 'Higiene', 'Camas'];
+
 /** Contraseña de prueba para todos los usuarios del seed. */
 const PASSWORD_PRUEBA = 'Password123!';
 
 const USUARIOS = [
   {
-    id: 1,
     email: 'cliente@test.com',
     password: PASSWORD_PRUEBA,
     nombre: 'Cliente',
@@ -27,7 +28,6 @@ const USUARIOS = [
     rol: 'CLIENTE' as const,
   },
   {
-    id: 2,
     email: 'admin@test.com',
     password: PASSWORD_PRUEBA,
     nombre: 'Admin',
@@ -38,14 +38,17 @@ const USUARIOS = [
 ];
 
 async function main() {
-  // 1. Usuarios (idempotente por email)
+  // 1. Usuarios (idempotente por email). Sin ids fijos: así no choca con usuarios ya registrados.
+  // Por las dudas, el contador de ids se alinea con los usuarios que ya existan.
+  await prisma.$queryRaw`SELECT setval(pg_get_serial_sequence('"User"', 'id'), (SELECT COALESCE(MAX(id), 1) FROM "User"))`;
   for (const u of USUARIOS) {
     const passwordHash = await bcrypt.hash(u.password, 10);
     await prisma.user.upsert({
       where: { email: u.email },
-      update: {}, // si ya existe, no lo toca
+      // El admin siempre queda con rol ADMIN y la contraseña de prueba (aunque el email ya existiera
+      // como cliente); el cliente de prueba, si ya existe, no se toca.
+      update: u.rol === 'ADMIN' ? { rol: 'ADMIN', password: passwordHash } : {},
       create: {
-        id: u.id,
         email: u.email,
         password: passwordHash,
         nombre: u.nombre,
@@ -57,10 +60,13 @@ async function main() {
   }
   console.log(`Usuarios cargados: ${USUARIOS.length}`);
 
-    // Los ids se cargaron a mano: avanzamos el contador para que los registros nuevos no choquen.
-  await prisma.$queryRaw`SELECT setval(pg_get_serial_sequence('"User"', 'id'), (SELECT COALESCE(MAX(id), 1) FROM "User"))`;
+  // 2. Categorías (idempotente por nombre)
+  for (const nombre of CATEGORIAS) {
+    await prisma.categoria.upsert({ where: { nombre }, update: {}, create: { nombre } });
+  }
+  console.log(`Categorías cargadas: ${CATEGORIAS.length}`);
 
-  // 2. Productos (idempotente por nombre)
+  // 3. Productos (idempotente por nombre)
   for (const p of PRODUCTOS) {
     await prisma.product.upsert({
       where: { nombre: p.nombre },

@@ -2,11 +2,15 @@ import type { Product } from '../../generated/prisma/client';
 import { AppError } from '../utils/app-error';
 import { parseCreateProduct, parseStock } from '../utils/product-rules';
 import type { ProductRepository } from '../repository/product.repository';
+import type { CategoryService } from './category.service';
 import type { ProductFilters } from '../types/product.types';
 
 /** SERVICIO: reglas de negocio y validaciones. No sabe nada de Express ni de Prisma. */
 export class ProductService {
-  constructor(private readonly repository: ProductRepository) {}
+  constructor(
+    private readonly repository: ProductRepository,
+    private readonly categoryService: CategoryService,
+  ) {}
 
   getAll(filters: ProductFilters): Promise<Product[]> {
     return this.repository.findAll(filters);
@@ -21,6 +25,10 @@ export class ProductService {
   /** `body` es lo que llegó por HTTP, sin tipar: se valida acá. */
   async create(body: unknown): Promise<Product> {
     const datos = parseCreateProduct(body);
+
+    const categoria = await this.categoryService.buscarPorNombre(datos.clasificacion);
+    if (!categoria) throw AppError.badRequest('Elegí una clasificación válida.');
+    datos.clasificacion = categoria.nombre; // se guarda con la escritura oficial de la categoría
 
     const repetido = await this.repository.findByNombre(datos.nombre);
     if (repetido) throw AppError.conflict('Ya existe un producto con ese nombre.');

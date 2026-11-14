@@ -29,11 +29,31 @@
         <label for="clasificacion">Clasificación</label>
         <select id="clasificacion" formControlName="clasificacion" [class.invalid]="invalido('clasificacion')">
           <option value="" disabled>Elegí una opción</option>
-          @for (cat of categorias; track cat) {
+          @for (cat of categorias(); track cat) {
           <option [value]="cat">{{ cat }}</option>
           }
         </select>
         @if (invalido('clasificacion')) { <small class="error-text">Elegí una clasificación.</small> }
+
+        @if (errorCategorias()) {
+        <small class="error-text">
+          No se pudieron cargar las categorías. Revisá que el backend esté encendido, actualizado y con la migración aplicada (<code>npm run db:migrate</code>).
+          <button type="button" class="btn-link" (click)="reintentarCategorias()">Reintentar</button>
+        </small>
+        }
+
+        @if (!agregandoCategoria()) {
+        <button type="button" class="btn-link" (click)="abrirNuevaCategoria()">+ Agregar categoría nueva</button>
+        } @else {
+        <div class="nueva-categoria">
+          <input type="text" maxlength="30" placeholder="Nombre de la categoría" aria-label="Nombre de la nueva categoría"
+            [value]="nuevaCategoria()" (input)="nuevaCategoria.set($any($event.target).value)"
+            (keydown.enter)="$event.preventDefault(); guardarNuevaCategoria()" />
+          <button type="button" class="btn-mini" (click)="guardarNuevaCategoria()">Crear</button>
+          <button type="button" class="btn-mini sec" (click)="cancelarNuevaCategoria()">Cancelar</button>
+        </div>
+        @if (errorCategoria()) { <small class="error-text">{{ errorCategoria() }}</small> }
+        }
       </div>
 
       <div class="fila">

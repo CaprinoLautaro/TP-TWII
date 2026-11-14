@@ -1,4 +1,4 @@
-import { CATEGORIAS, type CreateProductDto } from '../types/product.types';
+import type { CreateProductDto } from '../types/product.types';
 import { AppError } from './app-error';
 
 /**
@@ -34,8 +34,9 @@ export function parseCreateProduct(body: unknown): CreateProductDto {
 
   if (nombre.length < 3) errores.push('El nombre debe tener al menos 3 caracteres.');
   if (descripcion.length < 10) errores.push('La descripción debe tener al menos 10 caracteres.');
-  if (typeof clasificacion !== 'string' || !CATEGORIAS.includes(clasificacion)) {
-    errores.push('Elegí una clasificación válida.');
+  // Que la categoría exista se comprueba en ProductService (hay que mirar la base de datos).
+  if (typeof clasificacion !== 'string' || clasificacion.trim() === '') {
+    errores.push('Elegí una clasificación.');
   }
   if (typeof precio !== 'number' || !Number.isInteger(precio) || precio <= 0) {
     errores.push('El precio debe ser un número entero mayor a 0.');
@@ -49,7 +50,7 @@ export function parseCreateProduct(body: unknown): CreateProductDto {
   return {
     nombre,
     descripcion,
-    clasificacion: clasificacion as string,
+    clasificacion: (clasificacion as string).trim(),
     precio: precio as number,
     stock: stock as number,
     imagen,
