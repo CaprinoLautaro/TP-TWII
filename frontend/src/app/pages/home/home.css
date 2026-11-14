@@ -19,11 +19,72 @@
 }
 .filtros button.activo { background: #ff9f43; color: #fff; }
 
+/* Columnas fijas según el ancho (el número lo calcula home.ts y tiene que coincidir con estos valores).
+   Todas las filas miden lo mismo (1fr) y las tarjetas ocupan todo el alto de su celda. */
 .grilla {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 28px;
 }
+
+.barra-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 24px;
+  background: #fff7ef;
+  border: 1px solid #ffe0c2;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.campo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #7a5a3a; font-weight: 600; }
+.barra-filtros input {
+  border: 1px solid #e3c9ad;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.rango { display: flex; align-items: center; gap: 6px; }
+.rango input { width: 100px; }
+.segmentos { display: flex; }
+.barra-filtros .segmentos button {
+  border: 1px solid #ff7a45;
+  background: #fff;
+  color: #ff7a45;
+  padding: 8px 14px;
+  border-radius: 0;
+  cursor: pointer;
+}
+.segmentos button:first-child { border-radius: 20px 0 0 20px; }
+.segmentos button:last-child { border-radius: 0 20px 20px 0; }
+.segmentos button + button { border-left: none; }
+.barra-filtros .segmentos button.activo { background: #ff9f43; color: #fff; }
+.barra-filtros .limpiar {
+  background: none;
+  border: none;
+  color: #ff7a45;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px;
+}
+.resultados { color: #888; font-size: 13px; margin: 0 0 14px; }
+
+.paginacion { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.paginacion button {
+  min-width: 40px;
+  border: 1px solid #ff7a45;
+  background: #fff;
+  color: #ff7a45;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.paginacion button.activo { background: #ff9f43; color: #fff; }
+.paginacion button:disabled { opacity: 0.45; cursor: not-allowed; }
 .vacio { text-align: center; color: #888; }
 
 .aviso {
@@ -72,3 +133,8 @@
   cursor: pointer;
 }
 .error-carga button:hover { background: #ff7a45; }
+
+@media (max-width: 520px) {
+  .rango input { width: 80px; }
+  .grilla { gap: 18px; }
+}

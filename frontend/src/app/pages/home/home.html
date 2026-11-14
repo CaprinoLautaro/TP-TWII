@@ -24,6 +24,38 @@
     }
   </div>
 
+  <div class="barra-filtros" role="search">
+    <div class="campo">
+      <span id="lbl-mascota">Para</span>
+      <div class="segmentos" role="group" aria-labelledby="lbl-mascota">
+        <button type="button" [class.activo]="mascotaSeleccionada() === 'TODOS'" (click)="seleccionarMascota('TODOS')">Todos</button>
+        <button type="button" [class.activo]="mascotaSeleccionada() === 'PERRO'" (click)="seleccionarMascota('PERRO')">🐶 Perros</button>
+        <button type="button" [class.activo]="mascotaSeleccionada() === 'GATO'" (click)="seleccionarMascota('GATO')">🐱 Gatos</button>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span id="lbl-precio">Precio</span>
+      <div class="rango" role="group" aria-labelledby="lbl-precio">
+        <input type="number" min="0" inputmode="numeric" placeholder="Mín." aria-label="Precio mínimo"
+          [value]="precioMin() ?? ''" (input)="cambiarPrecioMin($any($event.target).value)" />
+        <span>–</span>
+        <input type="number" min="0" inputmode="numeric" placeholder="Máx." aria-label="Precio máximo"
+          [value]="precioMax() ?? ''" (input)="cambiarPrecioMax($any($event.target).value)" />
+      </div>
+    </div>
+
+    @if (hayFiltros()) {
+    <button type="button" class="limpiar" (click)="limpiarFiltros()">Limpiar filtros</button>
+    }
+  </div>
+
+  @if (!cargando() && !errorCarga()) {
+  <p class="resultados" aria-live="polite">
+    {{ productosFiltrados().length }} producto{{ productosFiltrados().length === 1 ? '' : 's' }}
+  </p>
+  }
+
   @if (cargando()) {
   <p class="vacio">Cargando productos...</p>
   } @else if (errorCarga()) {
@@ -32,14 +64,25 @@
     <button type="button" (click)="reintentar()">Reintentar</button>
   </div>
   } @else if (productosFiltrados().length === 0) {
-  <p class="vacio">No hay productos en esta categoría.</p>
+  <p class="vacio">No hay productos que coincidan con los filtros.</p>
   }
 
-  <div class="grilla">
-    @for (producto of productosFiltrados(); track producto.id) {
+  <div class="grilla" [style.--cols]="columnas()">
+    @for (producto of productosDePagina(); track producto.id) {
     <app-product-card-component [product]="producto" [enCarrito]="cantidadEnCarrito(producto.id)"
       (agregar)="agregarAlCarrito($event)">
     </app-product-card-component>
     }
   </div>
+
+  @if (totalPaginas() > 1) {
+  <nav class="paginacion" aria-label="Páginas de productos">
+    <button type="button" (click)="irAPagina(paginaActual() - 1)" [disabled]="paginaActual() === 1">← Anterior</button>
+    @for (n of paginas(); track n) {
+    <button type="button" [class.activo]="n === paginaActual()" [attr.aria-current]="n === paginaActual() ? 'page' : null"
+      (click)="irAPagina(n)">{{ n }}</button>
+    }
+    <button type="button" (click)="irAPagina(paginaActual() + 1)" [disabled]="paginaActual() === totalPaginas()">Siguiente →</button>
+  </nav>
+  }
 </section>

@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { NuevoProducto } from '../../models/product/product';
+import { MASCOTAS_OPCIONES, Mascota, NuevoProducto } from '../../models/product/product';
 import { CategoryService } from '../../services/categoryService/category-service';
 import { ProductService } from '../../services/productService/product-service';
 import { ImageService } from '../../services/imageService/image-service';
@@ -19,6 +19,7 @@ export class ProductForm {
   private readonly imageService = inject(ImageService);
   private readonly categoryService = inject(CategoryService);
 
+  readonly mascotas = MASCOTAS_OPCIONES;
   readonly categorias = this.categoryService.nombres;
   readonly errorCategorias = this.categoryService.errorCarga;
 
@@ -39,6 +40,7 @@ export class ProductForm {
     nombre: ['', [Validators.required, Validators.minLength(3)]],
     descripcion: ['', [Validators.required, Validators.minLength(10)]],
     clasificacion: ['', [Validators.required]],
+    mascota: ['AMBOS' as Mascota, [Validators.required]],
     precio: [null as number | null, [Validators.required, Validators.min(1)]],
     stock: [null as number | null, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
     imagen: [''],
@@ -61,6 +63,7 @@ export class ProductForm {
       nombre: v.nombre,
       descripcion: v.descripcion,
       clasificacion: v.clasificacion,
+      mascota: v.mascota,
       precio: Number(v.precio),
       stock: Number(v.stock),
       imagen: this.imagenPreview(),

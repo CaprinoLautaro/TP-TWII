@@ -1,8 +1,18 @@
+/** Para qué mascota es el producto. AMBOS aparece tanto en el filtro de perros como en el de gatos. */
+export type Mascota = 'PERRO' | 'GATO' | 'AMBOS';
+
+export const MASCOTAS_OPCIONES: { valor: Mascota; etiqueta: string }[] = [
+  { valor: 'PERRO', etiqueta: 'Perros' },
+  { valor: 'GATO', etiqueta: 'Gatos' },
+  { valor: 'AMBOS', etiqueta: 'Perros y gatos' },
+];
+
 export interface Product {
   id: number;
   nombre: string;
   descripcion: string;
   clasificacion: string;
+  mascota: Mascota;
   precio: number;
   stock: number;
   imagen: string;

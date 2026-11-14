@@ -2,7 +2,7 @@
   (keydown.enter)="irAlDetalle()">
   <img [src]="product.imagen" [alt]="product.nombre" />
   <div class="card-body">
-    <span class="categoria">{{ product.clasificacion }}</span>
+    <span class="categoria">{{ product.clasificacion }} · {{ etiquetaMascota }}</span>
     <h3>{{ product.nombre }}</h3>
     <p class="descripcion">{{ product.descripcion }}</p>
 

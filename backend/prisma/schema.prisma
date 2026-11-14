@@ -37,6 +37,13 @@ model User {
   orders    Order[]
 }
 
+/// Para qué mascota es un producto (se usa en el filtro del catálogo).
+enum Mascota {
+  PERRO
+  GATO
+  AMBOS
+}
+
 /// Categorías de producto. El admin puede agregar nuevas desde la app.
 /// Product.clasificacion guarda el nombre de la categoría (texto), validado contra esta tabla.
 model Categoria {
@@ -50,6 +57,7 @@ model Product {
   nombre        String   @unique
   descripcion   String
   clasificacion String // nombre de una Categoria (Alimento, Juguetes, ...)
+  mascota       Mascota  @default(AMBOS)
   precio        Int // en pesos, sin decimales
   stock         Int      @default(0)
   imagen        String   @default("")

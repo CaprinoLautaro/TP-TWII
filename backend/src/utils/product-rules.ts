@@ -1,4 +1,4 @@
-import type { CreateProductDto } from '../types/product.types';
+import { MASCOTAS, type CreateProductDto, type Mascota } from '../types/product.types';
 import { AppError } from './app-error';
 
 /**
@@ -28,6 +28,7 @@ export function parseCreateProduct(body: unknown): CreateProductDto {
   const nombre = typeof datos['nombre'] === 'string' ? datos['nombre'].trim() : '';
   const descripcion = typeof datos['descripcion'] === 'string' ? datos['descripcion'].trim() : '';
   const clasificacion = datos['clasificacion'];
+  const mascota = datos['mascota'] ?? 'AMBOS'; // si no la mandan, el producto sirve para ambos
   const precio = datos['precio'];
   const stock = datos['stock'];
   const imagen = typeof datos['imagen'] === 'string' ? datos['imagen'].trim() : '';
@@ -37,6 +38,9 @@ export function parseCreateProduct(body: unknown): CreateProductDto {
   // Que la categoría exista se comprueba en ProductService (hay que mirar la base de datos).
   if (typeof clasificacion !== 'string' || clasificacion.trim() === '') {
     errores.push('Elegí una clasificación.');
+  }
+  if (typeof mascota !== 'string' || !(MASCOTAS as readonly string[]).includes(mascota)) {
+    errores.push('Indicá si el producto es para perros, gatos o ambos.');
   }
   if (typeof precio !== 'number' || !Number.isInteger(precio) || precio <= 0) {
     errores.push('El precio debe ser un número entero mayor a 0.');
@@ -51,6 +55,7 @@ export function parseCreateProduct(body: unknown): CreateProductDto {
     nombre,
     descripcion,
     clasificacion: (clasificacion as string).trim(),
+    mascota: mascota as Mascota,
     precio: precio as number,
     stock: stock as number,
     imagen,

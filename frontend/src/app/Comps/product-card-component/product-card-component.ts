@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { Product } from '../../models/product/product';
+import { MASCOTAS_OPCIONES, Product } from '../../models/product/product';
 import { stockDisponible } from '../../models/product/product-rules';
 import { CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
@@ -16,6 +16,10 @@ export class ProductCardComponent {
   /** Unidades de este producto que ya están en el carrito. */
   @Input() enCarrito = 0;
   @Output() agregar = new EventEmitter<Product>();
+
+  get etiquetaMascota(): string {
+    return MASCOTAS_OPCIONES.find((m) => m.valor === this.product.mascota)?.etiqueta ?? 'Perros y gatos';
+  }
 
   get agotado(): boolean {
     return this.product.stock <= 0;
