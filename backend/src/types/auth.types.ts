@@ -1,7 +1,10 @@
 import type { User } from '../../generated/prisma/client';
 
 /** El usuario sin el campo password (lo único que se devuelve al cliente). */
-export type PublicUser = Omit<User, 'password'>;
+export type PublicUser = Omit<
+  User,
+  'password' | 'resetTokenHash' | 'resetTokenExpiresAt'
+>;
 
 /** POST /api/auth/signup */
 export interface SignupDto {

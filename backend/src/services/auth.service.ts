@@ -59,19 +59,6 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
-  async updateProfile(userId: number, dto: UpdateProfileDto): Promise<PublicUser> {
-  const data = this.normalizarPerfil(dto);
-  this.validarPerfil(data);
-
-  const user = await this.repository.findById(userId);
-  if (!user) {
-    throw AppError.notFound('Usuario no encontrado.');
-  }
-
-  const actualizado = await this.repository.updateProfile(userId, data);
-  return this.toPublicUser(actualizado);
-}
-
   // ─── helpers privados ───────────────────────────────────────
 
   private normalizarSignup(dto: SignupDto) {
@@ -96,28 +83,6 @@ export class AuthService {
         'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.',
       );
     }
-    if (await this.repository.findByEmail(email)) {
-      throw AppError.conflict('Ya existe una cuenta con ese email.');
-    }
-
-    const passwordHash = await hash(dto.password, 10);
-    const user = await this.repository.create({ email, nombre, apellido, direccion, passwordHash });
-
-    return { user: this.toPublicUser(user), token: this.generateToken(user) };
-  }
-
-  async signin(dto: SigninDto) {
-    const email = dto.email?.trim().toLowerCase();
-    const mensaje = 'Email o contraseña incorrectos.';
-
-    if (!email || !dto.password) throw AppError.unauthorized(mensaje);
-
-    const user = await this.repository.findByEmail(email);
-    if (!user || !(await compare(dto.password, user.password))) {
-      throw AppError.unauthorized(mensaje);
-    }
-
-    return { user: this.toPublicUser(user), token: this.generateToken(user) };
   }
 
   private generateResetToken() {
@@ -200,13 +165,6 @@ export class AuthService {
       );
     }
   }
-
-
-  async getProfile(_userId: number) {
-    // TODO: devolver el usuario sin el campo password.
-    throw AppError.notImplemented('getProfile');
-  }
-
   /** Edita nombre, apellido y dirección. El email, el rol y la contraseña no se tocan acá. */
   async updateProfile(userId: number, body: unknown) {
     const datos = typeof body === 'object' && body !== null ? (body as Partial<UpdateProfileDto>) : {};
@@ -230,18 +188,21 @@ export class AuthService {
   }
 
 
-  private toPublicUser(user: User) {
+  private toPublicUser(user: User): PublicUser {
     const {
       password: _password,
       resetTokenHash: _resetTokenHash,
       resetTokenExpiresAt: _resetTokenExpiresAt,
-      ...resto
+      ...publicUser
     } = user;
 
-    return resto;
-  private toPublicUser(user: User): PublicUser {
-    const { password: _ignored, ...publicUser } = user;
     return publicUser;
+  }
+  private toAuthResponse(user: User): AuthResponseDto {
+    return {
+      user: this.toPublicUser(user),
+      token: this.generateToken(user)
+    };
   }
 
 
