@@ -13,9 +13,27 @@ export class AuthController {
     res.json(await this.service.signin(req.body));
   };
 
-  // En estas dos rutas el middleware `authenticate` ya verificó el token y cargó req.user.
-  me = async (req: Request, res: Response) => {
-    res.json(await this.service.getProfile(req.user!.id));
+  requestPasswordReset = async (req: Request, res: Response) => {
+    await this.service.requestPasswordReset(req.body.email);
+
+    res.json({
+      message: 'Si el correo está registrado, recibirás un enlace de recuperación.'
+    });
+  };
+
+  resetPassword = async (req: Request, res: Response) => {
+    const { token, newPassword } = req.body;
+
+    await this.service.resetPassword(token, newPassword);
+
+    res.json({
+      message: 'Tu contraseña se actualizó correctamente.'
+    });
+  };
+
+  me = async (_req: Request, res: Response) => {
+    const userId = 0; // TODO: id del usuario autenticado (lo carga el middleware authenticate)
+    res.json(await this.service.getProfile(userId));
   };
 
   updateMe = async (req: Request, res: Response) => {

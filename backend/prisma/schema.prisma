@@ -29,6 +29,10 @@ model User {
   rol       Rol      @default(CLIENTE)
   createdAt DateTime @default(now())
 
+  resetTokenHash String?
+  resetTokenExpiresAt DateTime?
+
+
   cartItems CartItem[]
   orders    Order[]
 }
