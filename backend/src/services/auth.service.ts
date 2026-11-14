@@ -53,17 +53,35 @@ export class AuthService {
     return { user: this.toPublicUser(user), token: this.generateToken(user) };
   }
 
-  async getProfile(_userId: number) {
-    // TODO: devolver el usuario sin el campo password.
-    throw AppError.notImplemented('getProfile');
+  async getProfile(userId: number) {
+    const user = await this.repository.findById(userId);
+    if (!user) throw AppError.notFound('El usuario no existe.');
+    return this.toPublicUser(user);
   }
 
-  async updateProfile(_userId: number, _dto: UpdateProfileDto) {
-    // TODO: validar nombre, apellido y dirección (no vacíos) y actualizar.
-    throw AppError.notImplemented('updateProfile');
+  /** Edita nombre, apellido y dirección. El email, el rol y la contraseña no se tocan acá. */
+  async updateProfile(userId: number, body: unknown) {
+    const datos = typeof body === 'object' && body !== null ? (body as Partial<UpdateProfileDto>) : {};
+    const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim() : '';
+    const apellido = typeof datos.apellido === 'string' ? datos.apellido.trim() : '';
+    const direccion = typeof datos.direccion === 'string' ? datos.direccion.trim() : '';
+
+    if (!nombre || !apellido || !direccion) {
+      throw AppError.badRequest('Nombre, apellido y dirección son obligatorios.');
+    }
+    if (nombre.length > 60 || apellido.length > 60 || direccion.length > 200) {
+      throw AppError.badRequest('Alguno de los datos es demasiado largo.');
+    }
+
+    if (!(await this.repository.findById(userId))) {
+      throw AppError.notFound('El usuario no existe.');
+    }
+
+    const actualizado = await this.repository.updateProfile(userId, { nombre, apellido, direccion });
+    return this.toPublicUser(actualizado);
   }
 
-    private toPublicUser(user: User) {
+  private toPublicUser(user: User) {
     const { password: _password, ...resto } = user;
     return resto;
   }

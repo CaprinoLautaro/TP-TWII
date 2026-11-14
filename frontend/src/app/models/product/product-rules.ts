@@ -1,4 +1,4 @@
-import { CATEGORIAS, NuevoProducto } from './product';
+import { NuevoProducto } from './product';
 
 /**
  * Reglas de negocio de productos, escritas como funciones puras (sin Angular).
@@ -15,8 +15,9 @@ export function validarProducto(datos: Partial<NuevoProducto>): string[] {
   if (!datos.descripcion || datos.descripcion.trim().length < 10) {
     errores.push('La descripción debe tener al menos 10 caracteres.');
   }
-  if (!datos.clasificacion || !CATEGORIAS.includes(datos.clasificacion)) {
-    errores.push('Elegí una clasificación válida.');
+  // Que la categoría exista lo comprueba el backend (la lista está en la base de datos).
+  if (!datos.clasificacion || datos.clasificacion.trim() === '') {
+    errores.push('Elegí una clasificación.');
   }
   if (typeof datos.precio !== 'number' || !Number.isInteger(datos.precio) || datos.precio <= 0) {
     errores.push('El precio debe ser un número entero mayor a 0.');
