@@ -5,10 +5,6 @@
       <p class="rol">Cuenta de administrador (solo lectura)</p>
     }
 
-    @if (mensaje(); as msg) {
-      <div class="aviso" [class.error]="msg.tipo === 'error'">{{ msg.texto }}</div>
-    }
-
     <form [formGroup]="form" (ngSubmit)="guardar()">
       <div class="form-group">
         <label for="email">Email</label>

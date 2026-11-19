@@ -4,12 +4,6 @@
 </section>
 
 <section class="catalogo">
-  @if (mensaje(); as msg) {
-  <div class="aviso" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
-    {{ msg.texto }}
-  </div>
-  }
-
   <div class="filtros">
     @for (cat of categorias(); track cat) {
     <button [class.activo]="cat === categoriaSeleccionada()" (click)="seleccionarCategoria(cat)">

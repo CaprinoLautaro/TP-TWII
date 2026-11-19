@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractContro
 import { Router, RouterLink } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../../services/authService/auth-service';
-
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
@@ -15,9 +15,9 @@ import { AuthService } from '../../services/authService/auth-service';
 })
 export class Signup {
   registroForm: FormGroup;
-  mensajeError: string = '';
   cargando = signal(false);
   registroExitoso: boolean = false;
+  private readonly toastService = inject(ToastService);
 
   constructor(
   private fb: FormBuilder,
@@ -47,7 +47,7 @@ export class Signup {
 
 onSubmit(): void {
   if (this.cargando()) return;
-  this.mensajeError = '';
+  
   if (this.registroForm.invalid) {
     this.registroForm.markAllAsTouched();
     return;
@@ -61,7 +61,7 @@ onSubmit(): void {
       this.router.navigate(['/']); // queda con la sesión iniciada
     },
     error: (err: Error) => {
-      (this.mensajeError = err.message);
+      this.toastService.error(err.message);
       this.cargando.set(false);
     },
   });

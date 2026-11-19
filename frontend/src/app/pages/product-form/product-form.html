@@ -2,13 +2,6 @@
   <div class="form-card">
     <h2>Cargar nuevo producto</h2>
 
-    @if (mensajeError()) {
-    <div class="alert error" role="alert">{{ mensajeError() }}</div>
-    }
-    @if (creado()) {
-    <div class="alert ok" role="status">Producto creado. Volviendo al catálogo…</div>
-    }
-
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
       <div class="form-group">
         <label for="nombre">Nombre</label>

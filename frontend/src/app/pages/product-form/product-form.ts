@@ -5,6 +5,7 @@ import { MASCOTAS_OPCIONES, Mascota, NuevoProducto } from '../../models/product/
 import { CategoryService } from '../../services/categoryService/category-service';
 import { ProductService } from '../../services/productService/product-service';
 import { ImageService } from '../../services/imageService/image-service';
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -18,6 +19,7 @@ export class ProductForm {
   private readonly router = inject(Router);
   private readonly imageService = inject(ImageService);
   private readonly categoryService = inject(CategoryService);
+  private readonly toastService = inject(ToastService);
 
   readonly mascotas = MASCOTAS_OPCIONES;
   readonly categorias = this.categoryService.nombres;
@@ -31,7 +33,6 @@ export class ProductForm {
   readonly agregandoCategoria = signal(false);
   readonly nuevaCategoria = signal('');
   readonly errorCategoria = signal('');
-  readonly mensajeError = signal('');
   readonly creado = signal(false);
   readonly imagenPreview = signal('');
   readonly errorImagen = signal('');
@@ -52,7 +53,6 @@ export class ProductForm {
   }
 
   onSubmit(): void {
-    this.mensajeError.set('');
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -72,9 +72,10 @@ export class ProductForm {
     this.productService.crearProducto(datos).subscribe({
       next: () => {
         this.creado.set(true);
+        this.toastService.exito('Producto creado exitosamente.');
         setTimeout(() => this.router.navigate(['/']), 1200);
       },
-      error: (err: Error) => this.mensajeError.set(err.message),
+      error: (err: Error) => this.toastService.error(err.message),
     });
   }
 
@@ -95,8 +96,9 @@ export class ProductForm {
       next: (cat) => {
         this.form.controls.clasificacion.setValue(cat.nombre); // queda elegida
         this.agregandoCategoria.set(false);
+        this.toastService.exito('Categoría creada.');
       },
-      error: (err: Error) => this.errorCategoria.set(err.message),
+      error: (err: Error) => this.toastService.error(err.message),
     });
   }
 
@@ -109,7 +111,7 @@ export class ProductForm {
   this.imageService.subirImagen(archivo).subscribe({
     next: (url) => this.imagenPreview.set(url),
     error: (err: Error) => {
-      this.errorImagen.set(err.message);
+      this.toastService.error(err.message);
       this.imagenPreview.set('');
       input.value = '';
     },

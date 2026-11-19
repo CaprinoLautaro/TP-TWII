@@ -1,0 +1,8 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div class="toast toast-{{ toast.tipo }}" role="alert" aria-live="polite">
+      <span>{{ toast.texto }}</span>
+      <button class="btn-cerrar" (click)="toastService.cerrar(toast.id)" aria-label="Cerrar notificación">✕</button>
+    </div>
+  }
+</div>

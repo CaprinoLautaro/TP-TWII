@@ -1,6 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../services/authService/auth-service';
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -11,8 +12,7 @@ import { AuthService } from '../../services/authService/auth-service';
 export class Profile {
   private readonly fb = inject(FormBuilder);
   readonly auth = inject(AuthService);
-
-  readonly mensaje = signal<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  private readonly toastService = inject(ToastService);
 
   readonly form = this.fb.nonNullable.group({
     nombre: [this.auth.usuarioActual()?.nombre ?? '', [Validators.required, Validators.pattern(/\S/)]],
@@ -30,14 +30,13 @@ export class Profile {
   }
 
   guardar(): void {
-    this.mensaje.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     this.auth.actualizarPerfil(this.form.getRawValue()).subscribe({
-      next: () => this.mensaje.set({ tipo: 'ok', texto: 'Perfil actualizado correctamente.' }),
-      error: (err: Error) => this.mensaje.set({ tipo: 'error', texto: err.message }),
+      next: () => this.toastService.exito('Perfil actualizado correctamente.'),
+      error: (err: Error) => this.toastService.error(err.message),
     });
   }
 }

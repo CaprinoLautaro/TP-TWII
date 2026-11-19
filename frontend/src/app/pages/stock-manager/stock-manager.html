@@ -4,12 +4,6 @@
     <a routerLink="/" class="volver">← Volver al catálogo</a>
   </header>
 
-  @if (mensaje(); as msg) {
-    <div class="alert" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
-      {{ msg.texto }}
-    </div>
-  }
-
   @if (productos().length === 0) {
     <p class="vacio">Todavía no hay productos cargados.</p>
   }

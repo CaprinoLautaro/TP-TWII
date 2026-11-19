@@ -6,6 +6,7 @@ import { map } from 'rxjs';
 import { stockDisponible } from '../../models/product/product-rules';
 import { ProductService } from '../../services/productService/product-service';
 import { CartService } from '../../services/cartService/cart-service';
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   imports: [RouterLink, CurrencyPipe],
@@ -17,6 +18,7 @@ export class ProductDetail {
   private readonly route = inject(ActivatedRoute);
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
+  private readonly toastService = inject(ToastService);
 
   /** Id de la URL (/producto/:id). */
   private readonly id = toSignal(
@@ -31,7 +33,6 @@ export class ProductDetail {
   readonly producto = computed(() => this.productService.getProducto(this.id()) ?? null);
 
   readonly cantidad = signal(1);
-  readonly mensaje = signal<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
   readonly enCarrito = computed(
     () => this.cartService.carrito().find((i) => i.productId === this.id())?.cantidad ?? 0,
@@ -41,8 +42,6 @@ export class ProductDetail {
     const p = this.producto();
     return p ? stockDisponible(p.stock, this.enCarrito()) : 0;
   });
-
-  private timeoutMensaje: ReturnType<typeof setTimeout> | undefined;
 
   sumar() {
     if (this.cantidad() < this.disponible()) this.cantidad.update((c) => c + 1);
@@ -59,16 +58,10 @@ export class ProductDetail {
     const cantidad = this.cantidad();
     this.cartService.agregar(p.id, cantidad).subscribe({
       next: () => {
-        this.mostrarMensaje('ok', `Agregaste ${cantidad} × "${p.nombre}" al carrito`);
+        this.toastService.exito(`Agregaste ${cantidad} × "${p.nombre}" al carrito`);
         this.cantidad.set(1);
       },
-      error: (err: Error) => this.mostrarMensaje('error', err.message),
+      error: (err: Error) => this.toastService.error(err.message),
     });
-  }
-
-  private mostrarMensaje(tipo: 'ok' | 'error', texto: string) {
-    this.mensaje.set({ tipo, texto });
-    clearTimeout(this.timeoutMensaje);
-    this.timeoutMensaje = setTimeout(() => this.mensaje.set(null), 3500);
   }
 }

@@ -3,11 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ProductService } from '../../services/productService/product-service';
 import { Product } from '../../models/product/product';
 import { CartService } from '../../services/cartService/cart-service';
-
-interface Mensaje {
-  tipo: 'ok' | 'error';
-  texto: string;
-}
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   imports: [RouterLink],
@@ -19,10 +15,9 @@ interface Mensaje {
 export class StockManager {
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
+  private readonly toastService = inject(ToastService);
 
   readonly productos = this.productService.listaProductos;
-
-  readonly mensaje = signal<Mensaje | null>(null);
 
   /** Id del producto que está esperando confirmación para borrarse (null = ninguno). */
   readonly confirmandoId = signal<number | null>(null);
@@ -31,19 +26,16 @@ export class StockManager {
   guardar(producto: Product, stockStr: string): void {
     const stock = Number(stockStr);
     if (!Number.isInteger(stock) || stock < 0) {
-      this.mensaje.set({ tipo: 'error', texto: 'Ingresá un número entero mayor o igual a 0.' });
-      this.limpiarMensaje();
+      this.toastService.error('Ingresá un número entero mayor o igual a 0.');
       return;
     }
 
     this.productService.actualizarStock(producto.id, stock).subscribe({
       next: () => {
-        this.mensaje.set({ tipo: 'ok', texto: `Stock de "${producto.nombre}" actualizado.` });
-        this.limpiarMensaje();
+        this.toastService.exito(`Stock de "${producto.nombre}" actualizado.`);
       },
       error: (e) => {
-        this.mensaje.set({ tipo: 'error', texto: e.message });
-        this.limpiarMensaje();
+        this.toastService.error(e.message);
       },
     });
   }
@@ -64,18 +56,12 @@ export class StockManager {
         if (this.cartService.carrito().some((i) => i.productId === producto.id)) {
           this.cartService.quitar(producto.id).subscribe();
         }
-        this.mensaje.set({ tipo: 'ok', texto: `"${producto.nombre}" eliminado.` });
-        this.limpiarMensaje();
+        this.toastService.exito(`"${producto.nombre}" eliminado.`);
       },
       error: (e) => {
         this.confirmandoId.set(null);
-        this.mensaje.set({ tipo: 'error', texto: e.message });
-        this.limpiarMensaje();
+        this.toastService.error(e.message);
       },
     });
-  }
-
-  private limpiarMensaje(): void {
-    setTimeout(() => this.mensaje.set(null), 3000);
   }
 }

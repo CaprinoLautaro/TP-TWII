@@ -1,12 +1,6 @@
 <section class="detalle">
   <a routerLink="/" class="volver">← Volver al catálogo</a>
 
-  @if (mensaje(); as msg) {
-    <div class="aviso" [class.error]="msg.tipo === 'error'" role="status" aria-live="polite">
-      {{ msg.texto }}
-    </div>
-  }
-
   @if (producto(); as p) {
     <div class="contenido">
       <div class="imagen" [class.agotado]="p.stock <= 0">

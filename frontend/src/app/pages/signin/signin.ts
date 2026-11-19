@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/authService/auth-service';
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   imports: [ReactiveFormsModule, CommonModule, RouterLink],
@@ -14,8 +15,8 @@ export class Signin {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
-  mensajeError = '';
   cargando = signal(false);
 
   loginForm: FormGroup = this.fb.group({
@@ -25,7 +26,7 @@ export class Signin {
 
   onSubmit(): void {
     if (this.cargando()) return;
-    this.mensajeError = '';
+    
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -39,7 +40,7 @@ export class Signin {
         this.router.navigate(['/']);
       },
       error: (err: Error) => {
-        (this.mensajeError = err.message);
+        this.toastService.error(err.message);
         this.cargando.set(false);
       },
     });

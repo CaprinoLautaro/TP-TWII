@@ -3,6 +3,7 @@ import { RouterLink, Router } from '@angular/router';
 import { CartService } from '../../services/cartService/cart-service';
 import { ProductService } from '../../services/productService/product-service';
 import { AuthService } from '../../services/authService/auth-service';
+import { ToastService } from '../../services/toastService/toast-service';
 import { ProductCardComponent } from '../../Comps/product-card-component/product-card-component';
 import { Mascota, Product } from '../../models/product/product';
 
@@ -10,11 +11,6 @@ type FiltroMascota = 'TODOS' | 'PERRO' | 'GATO';
 
 /** Máximo de filas de productos por página. */
 const FILAS_POR_PAGINA = 2;
-
-interface Mensaje {
-  tipo: 'ok' | 'error';
-  texto: string;
-}
 
 @Component({
   imports: [ProductCardComponent, RouterLink],
@@ -28,6 +24,7 @@ export class Home {
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   readonly esAdmin = this.auth.esAdmin;
   readonly productos = this.productService.listaProductos;
@@ -35,7 +32,6 @@ export class Home {
   readonly errorCarga = this.productService.errorCarga;
   readonly carrito = this.cartService.carrito;
 
-  readonly mensaje = signal<Mensaje | null>(null);
   readonly categoriaSeleccionada = signal<string>('Todas');
 
   readonly categorias = computed<string[]>(() => {
@@ -160,13 +156,8 @@ export class Home {
     }
 
     this.cartService.agregar(producto.id).subscribe({
-      next: () => this.mostrarMensaje('ok', `"${producto.nombre}" agregado al carrito.`),
-      error: (e) => this.mostrarMensaje('error', e.message),
+      next: () => this.toastService.exito(`"${producto.nombre}" agregado al carrito.`),
+      error: (e) => this.toastService.error(e.message),
     });
-  }
-
-  private mostrarMensaje(tipo: Mensaje['tipo'], texto: string): void {
-    this.mensaje.set({ tipo, texto });
-    setTimeout(() => this.mensaje.set(null), 3000);
   }
 }

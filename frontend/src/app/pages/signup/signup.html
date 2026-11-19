@@ -7,10 +7,6 @@
       <h2 class="signup-title">Creá tu cuenta</h2>
     </div>
 
-    <div *ngIf="mensajeError" class="alert-danger">
-      {{ mensajeError }}
-    </div>
-
     <form [formGroup]="registroForm" (ngSubmit)="onSubmit()">
       <!-- Nombre -->
       <div class="form-group">

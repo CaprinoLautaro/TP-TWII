@@ -4,6 +4,7 @@ import { RouterLink, Router } from '@angular/router';
 import { CartService } from '../../services/cartService/cart-service';
 import { ProductService } from '../../services/productService/product-service';
 import { Product } from '../../models/product/product';
+import { ToastService } from '../../services/toastService/toast-service';
 
 interface DetalleItem {
   productId: number;
@@ -23,6 +24,7 @@ export class Cart {
   private readonly cartService = inject(CartService);
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   readonly carrito = this.cartService.carrito;
   readonly cantidadTotal = this.cartService.cantidadTotal;
@@ -69,13 +71,13 @@ export class Cart {
 
   quitar(productId: number): void {
     this.cartService.quitar(productId).subscribe({
-      error: (e) => console.error(e.message),
+      error: (e) => this.toastService.error(e.message),
     });
   }
 
   cambiarCantidad(productId: number, cantidad: number): void {
     this.cartService.cambiarCantidad(productId, cantidad).subscribe({
-      error: (e) => console.error(e.message),
+      error: (e) => this.toastService.error(e.message),
     });
   }
 

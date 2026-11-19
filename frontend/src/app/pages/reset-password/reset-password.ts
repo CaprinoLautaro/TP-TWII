@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { ToastService } from '../../services/toastService/toast-service';
 
 @Component({
   selector: 'app-reset-password',
@@ -13,6 +14,7 @@ export class ResetPassword {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
   resetForm = new FormGroup({
     password: new FormControl('', [
       Validators.required,
@@ -32,14 +34,14 @@ export class ResetPassword {
     const confirmPassword = this.resetForm.value.confirmPassword;
 
     if (password !== confirmPassword) {
-      alert('Las contraseñas no coinciden.');
+      this.toastService.error('Las contraseñas no coinciden.');
       return;
     }
 
     const token = this.route.snapshot.queryParamMap.get('token');
 
     if (!token) {
-      alert('El enlace de recuperación no es válido.');
+      this.toastService.error('El enlace de recuperación no es válido.');
       return;
     }
 
@@ -50,14 +52,11 @@ export class ResetPassword {
       })
       .subscribe({
         next: (respuesta) => {
-          alert(respuesta.message);
+          this.toastService.info(respuesta.message);
           this.router.navigate(['/signin']);
         },
         error: (error) => {
-          alert(
-            error.error?.message ||
-              'No se pudo cambiar la contraseña. El enlace podría haber vencido.',
-          );
+          this.toastService.error('No se pudo cambiar la contraseña. El enlace podría haber vencido.');
         },
       });
   }
