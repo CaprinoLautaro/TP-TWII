@@ -6,6 +6,9 @@ import { AuthService } from '../../services/authService/auth-service';
 import { ToastService } from '../../services/toastService/toast-service';
 import { ProductCardComponent } from '../../Comps/product-card-component/product-card-component';
 import { Mascota, Product } from '../../models/product/product';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 type FiltroMascota = 'TODOS' | 'PERRO' | 'GATO';
 
@@ -13,7 +16,7 @@ type FiltroMascota = 'TODOS' | 'PERRO' | 'GATO';
 const FILAS_POR_PAGINA = 2;
 
 @Component({
-  imports: [ProductCardComponent, RouterLink],
+  imports: [ProductCardComponent, RouterLink, ReactiveFormsModule],
   selector: 'app-home',
   styleUrl: './home.css',
   templateUrl: './home.html',
@@ -25,6 +28,15 @@ export class Home {
   private readonly cartService = inject(CartService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+
+  constructor() {
+    this.buscador.valueChanges
+      .pipe(debounceTime(1000), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((texto) => {
+        this.textoBusqueda.set(texto.trim().toLowerCase());
+        this.paginaPedida.set(1);
+      });
+  }
 
   readonly esAdmin = this.auth.esAdmin;
   readonly productos = this.productService.listaProductos;
@@ -43,13 +55,16 @@ export class Home {
   readonly mascotaSeleccionada = signal<FiltroMascota>('TODOS');
   readonly precioMin = signal<number | null>(null);
   readonly precioMax = signal<number | null>(null);
+  readonly buscador = new FormControl('', { nonNullable: true });
+  readonly textoBusqueda = signal('');
 
   readonly hayFiltros = computed(
     () =>
       this.categoriaSeleccionada() !== 'Todas' ||
       this.mascotaSeleccionada() !== 'TODOS' ||
       this.precioMin() !== null ||
-      this.precioMax() !== null,
+      this.precioMax() !== null ||
+      this.textoBusqueda() !== ""
   );
 
   readonly productosFiltrados = computed(() => {
@@ -57,13 +72,16 @@ export class Home {
     const mascota = this.mascotaSeleccionada();
     const min = this.precioMin();
     const max = this.precioMax();
+    const busqueda = this.textoBusqueda();
 
     return this.productos().filter((p) => {
       if (categoria !== 'Todas' && p.clasificacion !== categoria) return false;
       // "Perros" muestra los de perros y los que sirven para ambos (igual con gatos)
-      if (mascota !== 'TODOS' && p.mascota !== mascota && p.mascota !== ('AMBOS' as Mascota)) return false;
+      if (mascota !== 'TODOS' && p.mascota !== mascota && p.mascota !== ('AMBOS' as Mascota))
+        return false;
       if (min !== null && p.precio < min) return false;
       if (max !== null && p.precio > max) return false;
+      if(!p.nombre.toLowerCase().includes(busqueda)) return false;
       return true;
     });
   });
@@ -133,6 +151,8 @@ export class Home {
     this.precioMin.set(null);
     this.precioMax.set(null);
     this.paginaPedida.set(1);
+    this.textoBusqueda.set("");
+    this.buscador.setValue("");
   }
 
   reintentar(): void {
