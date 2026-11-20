@@ -1,4 +1,87 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --color-naranja: #ff7a45;
+  --color-naranja-claro: #ff9f43;
+  --color-naranja-hover: #e8642f;
+  --color-verde: #2a7a2a;
+  --color-verde-hover: #215e21;
+  --color-rojo: #c00;
+
+  --superficie: #fff;
+  --superficie-calida: #fff7ef;
+  --borde-calido: #f0e6dc;
+  --texto: #333;
+  --texto-suave: #666;
+
+  --radio-sm: 10px;
+  --radio-md: 14px;
+  --radio-lg: 18px;
+  --radio-pill: 999px;
+
+  --sombra-sm: 0 1px 2px rgba(60, 30, 10, 0.05), 0 2px 8px rgba(60, 30, 10, 0.06);
+  --sombra-md: 0 2px 4px rgba(60, 30, 10, 0.05), 0 10px 24px rgba(60, 30, 10, 0.08);
+  --sombra-lg: 0 4px 8px rgba(60, 30, 10, 0.06), 0 18px 40px rgba(60, 30, 10, 0.12);
+  --sombra-naranja: 0 6px 16px rgba(255, 122, 69, 0.28);
+
+  --transicion-rapida: 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transicion: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 * {
   font-family: 'Poppins', sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #ff9f43 #fff7ef;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #fff7ef;
+}
+::-webkit-scrollbar-thumb {
+  background: #ff9f43;
+  border: 2px solid #fff7ef;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff7a45;
+}
+
+body {
+  margin: 0;
+  color: var(--texto);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: #ffe0c2;
+  color: #333;
+}
+
+:focus-visible {
+  outline: 3px solid #ff9f43;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
