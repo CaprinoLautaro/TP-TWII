@@ -121,3 +121,39 @@
   .rango input { width: 80px; }
   .grilla { gap: 18px; }
 }
+.barra-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e3c9ad;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.barra-busqueda svg {
+  color: #ff7a45;
+  flex-shrink: 0;
+}
+
+.barra-busqueda input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: #333;
+}
+
+.barra-busqueda input::placeholder {
+  color: #999;
+}
+
+.barra-busqueda:focus-within {
+  border-color: #ff7a45;
+  box-shadow: 0 0 0 3px rgba(255, 122, 69, 0.12);
+}
